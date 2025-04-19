@@ -92,7 +92,7 @@ const Issuer_Revoke = () => {
       <div className="credentials-list">
         {filtered.length > 0 ? (
           filtered.map((cred) => (
-            <div className="credential-card" key={cred.id}>
+            <div className="credential-card-issuer" key={cred.id}>
               <img src={cred.logo} alt="logo" className="issuer-logo" />
               <div className="credential-info">
                 <h2>{cred.title}</h2>

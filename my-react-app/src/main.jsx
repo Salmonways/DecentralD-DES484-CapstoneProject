@@ -20,6 +20,8 @@ import DashboardPage_Issuer from './DashboardPage_Issuer';
 import Issuer_new from './Issuer_new';
 import Issuer_Revoke from './Issuer_Revoke';
 
+// 👇 Set the same tab name for all pages
+document.title = "DecentralD";
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -42,7 +44,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Route path="issuerdashboard" element={<DashboardPage_Issuer />} />
       <Route path="issuernew" element={<Issuer_new />} />
       <Route path="issuerrevoke" element={<Issuer_Revoke />} />
-
     </Routes>
   </BrowserRouter>
 );

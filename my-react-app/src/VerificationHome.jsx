@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom"
 import "./VerificationHome.css"
 
 const VerificationHome = () => {
+
+
   const navigate = useNavigate()
   const [verificationInput, setVerificationInput] = useState("")
   const [hasVerified, setHasVerified] = useState(false)

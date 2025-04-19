@@ -4,6 +4,8 @@ import { useParams, useNavigate, Link } from "react-router-dom"
 import "./VerificationResult.css"
 
 const VerificationResult = () => {
+
+
   const navigate = useNavigate()
   const { id } = useParams()
   const [verificationData, setVerificationData] = useState(null)
@@ -50,7 +52,7 @@ const VerificationResult = () => {
 
   return (
     <div className="wallet-wrapper">
-      <nav className="verification-nav">
+      <nav className="verification-nav-result">
         <span className="nav-item" onClick={() => navigate("/verificationhome")}>
           VERIFY CREDENTIAL
         </span>

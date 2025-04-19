@@ -128,3 +128,23 @@
     color: #666;
     margin-top: 4px;
   }
+
+  .issuer-logout-btn {
+    position: fixed;
+    bottom: 40px;
+    left: 40px;
+    background-color: #5a3b27;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+  }
+  
+  .issuer-logout-btn:hover {
+    background-color: #754d3b;
+  }

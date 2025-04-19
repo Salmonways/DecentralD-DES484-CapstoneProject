@@ -77,7 +77,11 @@ const DashboardPage_Issuer = () => {
           </div>
         </div>
       </div>
+      
     </div>
+    <button className="issuer-logout-btn" onClick={() => navigate('/')}>
+  Logout
+</button>
     </div>
   );
 };
