@@ -1,0 +1,100 @@
+body, html {
+
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(90deg, rgba(224,219,227,1) 100%, rgba(241,230,223,1) 100%);
+}
+/* Add this new wrapper */
+.login-page-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}
+.login-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.login-tabs {
+  background-color: white;
+  padding: 4px;
+  border-radius: 2em;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  display: flex;
+}
+
+.login-tab {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 2em;
+  cursor: pointer;
+  font-weight: bold;
+  background-color: transparent;
+  color: #000;
+  text-decoration: none;
+  font-size:larger;
+}
+
+.login-tab.active {
+  background-color: #5a3b27;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.login-box {
+  background-color: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 400px;
+  text-align: center;
+}
+.login-box input {
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+  width: 100%;
+  margin-left: -10px;
+}
+
+
+
+.login-box input::placeholder {
+  color: grey;
+}
+
+.login-btn {
+  background-color: #8c84b5;
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: 10px;
+  text-decoration: none;
+}
+
+.login-btn:hover {
+  background-color: #7b74a3;
+}
+
+.loginforgot-password {
+  text-align: center;
+  font-size: 14px;
+  color: #333;
+  text-decoration: underline;
+  margin-top: 5px;
+}
+

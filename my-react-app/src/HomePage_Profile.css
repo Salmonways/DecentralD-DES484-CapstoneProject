@@ -1,0 +1,174 @@
+/* Font and Layout Base */
+body, html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to bottom, rgba(224,219,227,1) 100%, rgba(241,230,223,1) 100%);
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Container for whole profile page */
+  .profile-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+  }
+  
+  /* Navigation bar at top */
+  .sidebar {
+    background-color: white;
+    padding: 4px;
+    border-radius: 2em;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+  }
+  
+  .nav-item {
+    padding: 10px 30px;
+    border-radius: 2em;
+    cursor: pointer;
+    font-weight: bold;
+    background-color: transparent;
+    color: #000;
+    text-decoration: none;
+    font-size: larger;
+  }
+  
+  .nav-item.active {
+    background-color: #5a3b27;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  
+  /* Main Content Area */
+  .main-content {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 800px;
+    max-width: 100%;
+  }
+  
+  .main-content h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    text-align: center;
+  }
+  
+  /* ID Card Section */
+  .id-card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+  }
+  
+  .id-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #5a3b27;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  /* ID content: Two columns */
+  .id-content {
+    display: flex;
+    margin-top: 20px;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  
+  .info-section, .form-section {
+    flex: 1;
+    min-width: 300px;
+  }
+  
+  /* Info display */
+  .info-row {
+    margin-bottom: 20px;
+  }
+  
+  .label {
+    display: block;
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+  
+  .value {
+    display: block;
+    font-size: 16px;
+    color: #2c3e50;
+    padding-bottom: 5px;
+    border-bottom: 1px dotted #bdc3c7;
+  }
+  
+  /* Form inputs */
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* This centers both the label and input */
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .form-row label {
+    font-size: 15px;
+    color: #000000;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    text-align: left;  /* Make sure label text aligns left */
+    margin-left:510px;
+
+  }
+  .form-row label::option {
+    margin-left:510px;
+
+  }
+
+  
+  .form-row input {
+    width: 70%;              /* Makes input narrower */
+    max-width: 600px;        /* Optional: prevent overly wide inputs */
+    display: block;          /* Ensures margin auto works */
+    margin: 0 auto;          /* Horizontally centers the input */
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #000000;
+    background-color: white;
+    color: #333;
+  }
+  
+  /* Make placeholder text black */
+  .form-row input::placeholder {
+    color: #000000;
+  }
+  
+  /* Button */
+  .edit-button {
+    background-color: #8c84b5;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    max-width: 600px;
+    margin-left: 524px;
+  }
+  
+  .edit-button:hover {
+    background-color: #7b74a3;
+  }

@@ -1,0 +1,58 @@
+.issuer-login-title {
+  font-size: 50px;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 1.5rem;
+  color: #111827;
+  margin-right: 180px;
+}
+
+.issuer-login-btn {
+  background-color: #8c84b5;
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: 10px;
+  text-decoration: none;
+}
+
+.issuer-login-btn:hover {
+  background-color: #7b74a3;
+}
+
+.issuer-login-box {
+  background-color: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 400px;
+  text-align: center;
+}
+
+.issuer-login-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.issuer-login-box input {
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+  width: 100%;
+  margin-left: -10px;
+}
+
+.issuer-login-box input::placeholder {
+  color: grey;
+}

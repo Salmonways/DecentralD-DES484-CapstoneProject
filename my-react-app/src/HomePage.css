@@ -1,0 +1,145 @@
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to bottom, white 0%, #c3b0e6 100%);
+}
+
+.wallet-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: linear-gradient(to bottom, white 0%, #c3b0e6 100%);
+  padding: 60px;
+  border-radius: 20px;
+}
+
+.wallet-nav {
+  display: flex;
+  gap: 60px;
+  font-size: 22px;
+  margin-bottom: 40px;
+}
+
+.nav-item {
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 14px;
+}
+
+.nav-item.active {
+  background-color: white;
+  font-weight: bold;
+}
+
+.wallet-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #5a3b27;
+  margin-bottom: 40px;
+}
+
+.wallet-toggle {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.wallet-tab {
+  border: none;
+  border-radius: 2em;
+  padding: 14px 30px;
+  background-color: #e6d7f0;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.wallet-tab.active {
+  background-color: white;
+  color: #5a3b27;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.wallet-id-card {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 60px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.wallet-id-card:hover {
+  transform: scale(1.05);
+}
+
+.wallet-id-card img {
+  width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.credential-header {
+  display: flex;
+  align-items: center;
+  font-size: 30px;
+  font-weight: bold;
+  color: #5a3b27;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.arrow {
+  font-size: 36px;
+}
+
+.credential-cards {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.credential-card {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 220px;
+  text-align: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+.credential-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 14px;
+}
+
+.cred-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.cred-status {
+  font-size: 16px;
+}
+
+.add-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #333;
+}
+
+.add-circle {
+  font-size: 48px;
+  width: 80px;
+  height: 80px;
+  border: 3px solid #333;
+  border-radius: 50%;
+  line-height: 80px;
+}

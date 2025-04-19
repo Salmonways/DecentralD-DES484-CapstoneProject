@@ -1,0 +1,263 @@
+/* Global styles */
+body, html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to bottom, white 0%, #c3b0e6 100%);
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Title */
+  .setting-title {
+    font-size: 48px;
+    font-weight: bold;
+    color: #4a2c57;
+    margin-bottom: 40px;
+    margin-left: 40px;
+  }
+  
+  /* Section wrapper */
+  .setting-section {
+    margin: 30px 40px;
+    font-size: 20px;
+    background-color: #ffffffcc;
+    padding: 36px;
+    border-radius: 16px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    max-width: 100%;
+  }
+  
+  .setting-section h2 {
+    font-size: 28px;
+    color: #4a2c57;
+    margin-bottom: 24px;
+  }
+  
+  /* Form elements */
+  .setting-section label {
+    display: block;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 12px 0 8px;
+    color: #333;
+  }
+  
+  .setting-section input,
+  .setting-section select,
+  .setting-section textarea {
+    font-size: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 14px;
+  }
+  
+  .setting-section textarea {
+    resize: vertical;
+  }
+  /* Checkbox Styling */
+.setting-section input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: #4a2c57;
+  margin-right: 12px;
+  transform: scale(1.2);
+}
+
+/* Standard Button Styling */
+.setting-section button,
+.blocked-item button,
+.wallet-item button {
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: 2px solid #4a2c57;
+  background-color: white;
+  color: #4a2c57;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.setting-section button:hover,
+.blocked-item button:hover,
+.wallet-item button:hover {
+  background-color: #4a2c57;
+  color: white;
+}
+
+/* Danger Buttons */
+.danger-btn {
+  background-color: white;
+  border: 2px solid #b30000;
+  color: #b30000;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 12px;
+  margin: 10px 16px 0 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.danger-btn:hover {
+  background-color: #b30000;
+  color: white;
+}
+
+/* Save & Reset Buttons */
+.save-btn,
+.reset-btn {
+  padding: 16px 36px;
+  font-size: 20px;
+  font-weight: 600;
+  border: 2px solid #4a2c57;
+  border-radius: 14px;
+  background-color: white;
+  color: #4a2c57;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 20px;
+}
+
+.save-btn:hover,
+.reset-btn:hover {
+  background-color: #4a2c57;
+  color: white;
+}
+  
+  /* Toggles */
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+  }
+  
+  .toggle-container button {
+    padding: 12px 20px;
+    font-size: 18px;
+    border-radius: 10px;
+    border: 2px solid #4a2c57;
+    background-color: white;
+    color: #4a2c57;
+    cursor: pointer;
+  }
+  
+  .toggle-container button:hover {
+    background-color: #4a2c57;
+    color: white;
+  }
+  
+  /* Profile picture */
+  .profile-pic-container {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  
+  .profile-pic-container img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #4a2c57;
+  }
+  
+  .profile-preview {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-top: 10px;
+    border: 2px solid #ccc;
+  }
+  /* Blocked Users / Connected Wallets */
+  .blocked-user,
+  .connected-wallet {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0;
+    max-width: 600px;
+  }
+  
+  .blocked-user button,
+  .connected-wallet button {
+    padding: 10px 16px;
+    font-size: 16px;
+    background-color: white;
+    border: 2px solid #4a2c57;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  
+  .blocked-user button:hover,
+  .connected-wallet button:hover {
+    background-color: #4a2c57;
+    color: white;
+  }
+  
+  /* Button group */
+  .button-group {
+    display: flex;
+    gap: 24px;
+    margin: 50px 40px;
+  }
+  
+  .save-btn,
+  .reset-btn {
+    padding: 16px 36px;
+    font-size: 20px;
+    font-weight: 600;
+    border: 2px solid #4a2c57;
+    border-radius: 14px;
+    background-color: white;
+    color: #4a2c57;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .save-btn:hover,
+  .reset-btn:hover {
+    background-color: #4a2c57;
+    color: white;
+  }
+  
+  /* Danger Zone */
+  .danger-zone {
+    background-color: #ffe6e6;
+    border: 2px solid #ff4d4d;
+    padding: 36px;
+    border-radius: 18px;
+    margin: 40px;
+    max-width: 100%;
+  }
+  
+  .danger-zone h3 {
+    color: #b30000;
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .danger-zone button {
+    background-color: white;
+    border: 2px solid #b30000;
+    color: #b30000;
+    font-size: 18px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    margin-right: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .danger-zone button:hover {
+    background-color: #b30000;
+    color: white;
+  }
