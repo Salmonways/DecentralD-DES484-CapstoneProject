@@ -158,3 +158,16 @@
     color: #000;
     transform: scale(1.03);
   }
+
+  @media print {
+    .verification-nav-result,
+    .download-section,
+    .bottom-left-back-btn {
+      display: none;
+    }
+  
+    .wallet-wrapper {
+      box-shadow: none;
+      padding: 0;
+    }
+  }

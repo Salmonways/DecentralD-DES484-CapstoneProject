@@ -26,14 +26,44 @@ const RegisterPage = () => {
     setFormData({ ...formData, did: generateDID() });
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
 
-    alert("Registered successfully! Your DID is: " + formData.did);
-    navigate("/login");
+    try {
+      const response = await fetch("http://localhost:5001/api/did", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          did: formData.did,
+          userData: {
+            fullName: formData.fullName,
+            username: formData.username,
+            email: formData.email,
+          },
+          password: formData.password
+        })
+      });
+
+      if (response.ok) {
+        alert("Registered successfully! Your DID is: " + formData.did);
+        navigate("/login");
+      } else {
+        let errorMsg = "Unknown error";
+        try {
+          const error = await response.json();
+          errorMsg = error.error || JSON.stringify(error);
+        } catch (e) {
+          errorMsg = "Server did not return JSON";
+        }
+        alert("Registration failed: " + errorMsg);
+        return;
+      }
+    } catch (err) {
+      alert("Registration error: " + err.message);
+    }
   };
 
   return (

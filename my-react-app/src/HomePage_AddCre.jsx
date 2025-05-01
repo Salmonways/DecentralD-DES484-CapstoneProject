@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './HomePage_AddCre.css';
+import { Upload } from 'lucide-react'; // Ensure this is imported
+
 
 const HomePage_AddCre = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     issuerName: '',
+    issuerDID: '',
     credentialType: '',
-    subjectDID: '',
+    credentialID: '',        // ✅ Add this line
     requestedDate: '',
     expiryDate: '',
-    reason: '',
+    description: '',
     file: null,
   });
 
@@ -23,15 +26,46 @@ const HomePage_AddCre = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const { issuerName, credentialType, subjectDID, requestedDate, reason, file } = formData;
-    if (!issuerName || !credentialType || !subjectDID || !requestedDate || !reason || !file) {
-      alert('Please complete all required fields');
+  
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("You must be logged in to submit a credential request.");
       return;
     }
-    console.log('Submitting:', formData);
-    // Handle submission logic here
+  
+    const formDataToSend = new FormData();
+    formDataToSend.append('issuerDID', formData.issuerDID);
+    formDataToSend.append('credentialID', formData.credentialID);
+    formDataToSend.append('credentialType', formData.credentialType);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('requestedDate', formData.requestedDate);
+    formDataToSend.append('expiryDate', formData.expiryDate);
+    formDataToSend.append('issuerName', formData.issuerName);
+    if (formData.file) {
+      formDataToSend.append('file', formData.file);
+    }
+  
+    try {
+      const res = await fetch('http://localhost:5001/api/credentials/request', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formDataToSend
+      });
+  
+      if (!res.ok) {
+        const errorText = await res.text(); // read response body as text
+        throw new Error(`Server error: ${res.status} - ${errorText}`);
+      }
+      const data = await res.json();
+      alert(data.message);
+    } catch (err) {
+      console.error('Submission error:', err);
+      alert('Failed to submit credential request.');
+    }
   };
 
   return (
@@ -60,14 +94,21 @@ const HomePage_AddCre = () => {
             value={formData.issuerName}
             onChange={handleChange}
           />
-
           <input
             type="text"
-            name="subjectDID"
-            placeholder="Subject DID"
-            value={formData.subjectDID}
+            name="issuerDID"
+            placeholder="Issuer DID"
+            value={formData.issuerDID}
             onChange={handleChange}
           />
+          <input
+            type="text"
+            name="credentialID"
+            placeholder="Credential ID"
+            value={formData.credentialID}
+            onChange={handleChange}
+          />
+
 
           <input
             type="date"
@@ -84,19 +125,17 @@ const HomePage_AddCre = () => {
           />
 
           <textarea
-            name="reason"
-            placeholder="Reason for Request"
-            value={formData.reason}
+            name="description"
+            placeholder="Description"
+            value={formData.description}
             onChange={handleChange}
           />
 
-          <label className="upload-label">
-            Upload Supporting Document
-            <input
-              type="file"
-              name="file"
-              onChange={handleChange}
-            />
+
+          <label className="file-upload">
+            <span>Upload File</span>
+            <Upload size={18} />
+            <input type="file" name="file" onChange={(e) => setFormData({...formData, file: e.target.files[0]})} />
           </label>
 
           <p className="form-note">Please complete all required fields</p>

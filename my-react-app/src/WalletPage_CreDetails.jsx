@@ -1,51 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './WalletPage_CreDetails.css';
-import tuImg from './assets/TU.png';
-import toeicImg from './assets/TOEIC.png';
-import IDImg from './assets/ID.png';
-
-const credentialData = {
-  1: {
-    logo: tuImg,
-    title: 'Bachelor Degree - TU',
-    issuer: 'Thammasat University',
-    type: 'Bachelor’s Degree',
-    issueDate: '15 October 2023',
-    credentialID: 'cred:0x7a41fcde12...',
-    description: 'Bachelor of Engineering (Computer Science), GPA 3.65',
-    status: 'Verified',
-  },
-  2: {
-    logo: toeicImg,
-    title: 'TOEIC Result - ETS',
-    issuer: 'ETS',
-    type: 'English Proficiency Test',
-    issueDate: '01 February 2023',
-    credentialID: 'cred:0x8b29deaa99...',
-    description: 'TOEIC Score: 945 / 990 - Listening & Reading.',
-    status: 'Verified',
-  },
-  3: {
-    logo: IDImg,
-    title: 'National ID - Thai Gov',
-    issuer: 'Thai Government',
-    type: 'National Identity Document',
-    issueDate: '10 January 2020',
-    credentialID: 'cred:0x3c42daaa45...',
-    description: 'Thai Government-issued national ID. Invalid due to formatting error.',
-    status: 'Rejected',
-  },
-};
 
 const WalletPage_CreDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const credential = credentialData[id];
+  const [credential, setCredential] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!credential) {
-    return <p style={{ padding: '40px', color: 'red' }}>Credential not found.</p>;
-  }
+  useEffect(() => {
+    const fetchCredential = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:5001/api/credentials/detail/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch credential detail');
+        }
+        const data = await response.json();
+
+        // Log to debug
+        console.log('Fetched credential data:', data);
+
+        // Update image path if available
+        const updatedCredential = {
+          ...data,
+          filePath: data.filePath ? `http://localhost:5001${data.filePath}` : null,
+        };
+
+        setCredential(updatedCredential);
+      } catch (err) {
+        console.error(err);
+        setError('Credential not found or failed to fetch.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCredential();
+  }, [id]);
+
+  if (loading) return <p style={{ padding: '40px' }}>Loading...</p>;
+  if (error || !credential) return <p style={{ padding: '40px', color: 'red' }}>{error}</p>;
+
+  const title = credential.credentialType
+    ? credential.credentialType.toUpperCase()
+    : 'UNTITLED CREDENTIAL';
+  const issuerName = credential.issuerName || 'Unknown Issuer';
 
   return (
     <div className="wallet-wrapper">
@@ -55,34 +56,38 @@ const WalletPage_CreDetails = () => {
         <span className="nav-item" onClick={() => navigate('/sharepage')}>SHARE</span>
         <span className="nav-item" onClick={() => navigate('/settingpage')}>SETTING</span>
       </nav>
+
       <h1 className="walletpage-cred-title">CREDENTIAL DETAILS</h1>
-  
+
       <div className="walletpage-cred-content">
         <div className="walletpage-cred-left">
-          <img
-            src={credential.logo}
-            alt={`${credential.issuer} Logo`}
-            className="walletpage-cred-logo"
-          />
-          <p className="walletpage-cred-name">{credential.title}</p>
+          {credential.filePath ? (
+            <img
+              src={credential.filePath}
+              alt={`${issuerName} Logo`}
+              className="walletpage-cred-logo"
+            />
+          ) : (
+            <div className="walletpage-cred-logo-fallback">No Logo</div>
+          )}
           <p className="walletpage-cred-status">
-            Status: {credential.status === 'Verified' ? '✅ Verified' : '❌ Rejected'}
+            Status: {credential.status === 'active' ? '✅ Verified' : '❌ Rejected'}
           </p>
         </div>
-  
+
         <div className="walletpage-cred-info">
-          <h2>{credential.title.toUpperCase()}</h2>
-          <p><strong>Issuer:</strong> {credential.issuer}</p>
-          <p><strong>Type:</strong> {credential.type}</p>
-          <p><strong>Issue Date:</strong> {credential.issueDate}</p>
+          <h2>{title}</h2>
+          <p><strong>Issuer:</strong> {issuerName}</p>
+          <p><strong>Type:</strong> {credential.credentialType}</p>
+          <p><strong>Issue Date:</strong> {new Date(credential.created_at).toLocaleDateString()}</p>
           <p><strong>Credential ID:</strong> {credential.credentialID}</p>
           <p><strong>Description:</strong> {credential.description}</p>
         </div>
       </div>
-  
+
       <button className="walletpage-share-btn" onClick={() => navigate('/sharepage')}>
         SHARE CREDENTIAL
-        </button>
+      </button>
       <button className="walletpage-back-btn" onClick={() => navigate(-1)}>← BACK</button>
     </div>
   );

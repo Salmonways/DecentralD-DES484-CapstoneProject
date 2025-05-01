@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import './LoginPage_Issuer.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     adminEmail: "",
     password: "",
@@ -16,16 +17,34 @@ const LoginPage = () => {
     }));
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Implement login logic here
-    console.log("Issuer Logged In:", formData);
+    const response = await fetch('http://localhost:5001/api/issuer/login', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            adminEmail: formData.adminEmail,
+            password: formData.password
+        })
+    });
+    const data = await response.json();
+    if (response.ok) {
+        alert("Issuer login successful!");
+        navigate("/issuerdashboard"); // Redirect after successful login
+    } else {
+        alert(data.error || "Login failed");
+    }
+
+    if (response.ok) {
+      localStorage.setItem('adminEmail', formData.adminEmail); // <-- Save it here
+      alert("Issuer login successful!");
+      navigate("/issuerdashboard");
+    }
   };
 
   return (
     <div className="login-page-wrapper">
       <div className="login-container">
-        
         {/* Title */}
         <h1 className="issuer-login-title">Issuer Login</h1>
 
@@ -52,8 +71,7 @@ const LoginPage = () => {
               onChange={handleChange}
               required
             />
-
-            <Link type="submit" className="issuer-login-btn" to="/issuerdashboard">Login</Link>
+            <button type="submit" className="issuer-login-btn">Login</button>
           </form>
 
           <div className="login-forgot-password">

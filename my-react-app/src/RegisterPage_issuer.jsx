@@ -28,12 +28,31 @@ const RegisterPage_Issuer = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Issuer Registered:", formData);
-    alert("Registration submitted! Please complete DNS verification.");
-    navigate("/issuerlogin");
-  };
+    const form = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) form.append(key, value);
+    });
+
+    // Prompt for password (for demo) - you should use a real password input
+    const password = prompt("Set a password for admin login:");
+    form.append('password', password);
+
+    const response = await fetch('http://localhost:5001/api/issuer/register', {
+        method: 'POST',
+        body: form
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+        alert("Registration submitted! Please complete DNS verification.");
+        navigate("/issuerlogin");
+    } else {
+        alert("Registration failed: " + data.error);
+    }
+};
+
 
   return (
     <div className="page-wrapper">

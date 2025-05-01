@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect} from 'react';
 import './Issuer_new.css';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -7,32 +7,69 @@ const Issuer_new = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('');
   const [subjectDID, setSubjectDID] = useState('');
-  const [issuerDID] = useState('did:issuer:123456'); // Mock logged-in issuer DID
   const [issueDate, setIssueDate] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
-  const [credentialId] = useState('cred-' + Math.random().toString(36).substr(2, 9)); // Mock UUID
-  const [status, setStatus] = useState('Active');
   const [cryptoProof] = useState('SignedJWT-abc123xyz'); // Mock proof
   const [issuerName, setIssuerName] = useState('');
   const [subjectName, setSubjectName] = useState('');
   const [description, setDescription] = useState('');
   const [metadata, setMetadata] = useState('');
   const [tags, setTags] = useState('');
-  const [schemaUrl, setSchemaUrl] = useState('');
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
+  const [adminEmail] = useState(localStorage.getItem('adminEmail')); // or use JWT if you prefer
+  const [issuerDID, setIssuerDID] = useState('');
+  const [credentialId, setCredentialId] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log({
-      title, type, subjectDID, issuerDID, issueDate, expirationDate,
-      credentialId, status, cryptoProof, issuerName, subjectName,
-      description, metadata, tags, schemaUrl, file
-    });
-    // Logic to submit form data goes here
-    window.alert('Credential issued successfully!');
 
+
+  useEffect(() => {
+    const fetchIssuerInfo = async () => {
+      try {
+        const res = await fetch(`http://localhost:5001/api/issuer/profile?email=${adminEmail}`);
+        const data = await res.json();
+        setIssuerName(data.issuerName);
+        // Uncomment the next line if you want to override the default issuerDID
+        setIssuerDID(data.issuerDID);
+      } catch (err) {
+        console.error('Error fetching issuer info:', err);
+      }
+    };
+  
+    if (adminEmail) fetchIssuerInfo();
+  }, [adminEmail]);
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('type', type);
+    formData.append('subjectDID', subjectDID);
+    formData.append('issuerDID', issuerDID);
+    formData.append('issueDate', issueDate);
+    formData.append('expirationDate', expirationDate);
+    formData.append('cryptoProof', cryptoProof);
+    formData.append('subjectName', subjectName);
+    formData.append('description', description);
+    formData.append('metadata', metadata);
+    formData.append('credentialId', credentialId);
+    formData.append('issuerName', issuerName); // Ensure this is included
+    formData.append('tags', tags);
+    if (file) formData.append('file', file); // Optional
+  
+    try {
+      const res = await fetch('http://localhost:5001/api/credentials/issue', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      alert(data.message);
+    } catch (err) {
+      console.error('Issue error:', err);
+      alert('Failed to issue credential.');
+    }
   };
+  console.log("adminEmail from localStorage:", adminEmail);
 
   return (
     <div className="issue-container">
@@ -49,14 +86,28 @@ const Issuer_new = () => {
           <label>Credential Title</label>
           <input type="text" placeholder="Credential Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           
+
+
+          <label>Credential ID</label>
+            <input
+              type="text"
+              placeholder="Credential ID"
+              value={credentialId}
+              onChange={(e) => setCredentialId(e.target.value)}
+            />
           <label>Credential Type (e.g., DegreeCertificate)</label>
-          <input type="text" placeholder="Credential Type" value={type} onChange={(e) => setType(e.target.value)} />
+            <select name="Credential Type" value={type}  onChange={(e) => setType(e.target.value)}>
+              <option value="">Select Credential Type</option>
+              <option value="Degree">Degree</option>
+              <option value="Certificate">Certificate</option>
+              <option value="ID Card">ID Card</option>
+            </select>
 
           <label>Subject DID</label>
           <input type="text" placeholder="Subject DID" value={subjectDID} onChange={(e) => setSubjectDID(e.target.value)} />
 
           <label>Issuer DID</label>
-          <input type="text" placeholder="Issuer DID" value={issuerDID} readOnly />
+          <input type="text" placeholder="Issuer DID" value={issuerDID || 'Loading...'} readOnly />
 
           <label>Issue Date</label>
           <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="date-select" />
@@ -64,21 +115,12 @@ const Issuer_new = () => {
           <label>Expiration Date</label>
           <input type="date" value={expirationDate} onChange={(e) => setExpirationDate(e.target.value)} className="date-select" />
 
-          <label>Credential ID</label>
-          <input type="text" placeholder="Credential ID" value={credentialId} readOnly />
-
-          <label>Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="Active">Active</option>
-            <option value="Revoked">Revoked</option>
-            <option value="Expired">Expired</option>
-          </select>
 
           <label>Cryptographic Proof</label>
           <input type="text" placeholder="Cryptographic Proof" value={cryptoProof} readOnly />
 
           <label>Issuer Name / Organization</label>
-          <input type="text" placeholder="Issuer Name / Organization" value={issuerName} onChange={(e) => setIssuerName(e.target.value)} />
+          <input type="text" placeholder="Issuer Name / Organization" value={issuerName} onChange={(e) => setIssuerName(e.target.value)} readOnly />
 
           <label>Subject Name</label>
           <input type="text" placeholder="Subject Name" value={subjectName} onChange={(e) => setSubjectName(e.target.value)} />
@@ -92,14 +134,13 @@ const Issuer_new = () => {
           <label>Tags / Categories</label>
           <input type="text" placeholder="Tags / Categories" value={tags} onChange={(e) => setTags(e.target.value)} />
 
-          <label>Credential Schema URL</label>
-          <input type="url" placeholder="Credential Schema URL" value={schemaUrl} onChange={(e) => setSchemaUrl(e.target.value)} />
+
 
           <label>Upload File</label>
           <label className="file-upload">
-            <span>Upload file</span>
+            <span>Upload File</span>
             <Upload size={18} />
-            <input type="file" onChange={(e) => setFile(e.target.files[0])} hidden />
+            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
           </label>
 
           <p className="issue-warning">Please complete all required fields</p>
@@ -109,6 +150,8 @@ const Issuer_new = () => {
       </div>
     </div>
   );
+
 };
+
 
 export default Issuer_new;

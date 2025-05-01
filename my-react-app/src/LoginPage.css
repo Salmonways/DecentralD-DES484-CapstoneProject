@@ -73,6 +73,12 @@ body, html {
   color: grey;
 }
 
+.login-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* <<< Add this to separate input boxes */
+}
+
 .login-btn {
   background-color: #8c84b5;
   color: white;
@@ -97,4 +103,3 @@ body, html {
   text-decoration: underline;
   margin-top: 5px;
 }
-

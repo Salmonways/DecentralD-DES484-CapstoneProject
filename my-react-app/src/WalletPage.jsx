@@ -1,37 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WalletPage.css';
-import tuImg from './assets/TU.png';
-import toeicImg from './assets/TOEIC.png';
-import IDImg from './assets/ID.png';
-
-const credentials = [
-  {
-    id: 1,
-    title: 'Bachelor Degree - TU',
-    issuer: 'Thammasat University',
-    status: 'Verified',
-    logo: tuImg,
-  },
-  {
-    id: 2,
-    title: 'TOEIC Result - ETS',
-    issuer: 'ETS',
-    status: 'Verified',
-    logo: toeicImg,
-  },
-  {
-    id: 3,
-    title: 'National ID - Thai Gov',
-    issuer: 'Thai Government',
-    status: 'Rejected',
-    logo: IDImg,
-  },
-];
 
 const WalletPage = () => {
   const [activeTab, setActiveTab] = useState('Verified');
+  const [credentials, setCredentials] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const fetchCredentials = async (status) => {
+    setLoading(true);
+    try {
+      const did = localStorage.getItem('did');
+      let url = '';
+  
+      if (status === 'Verified') {
+        url = `http://localhost:5001/api/credentials/requests/${did}`;
+      } else if (status === 'Rejected') {
+        url = `http://localhost:5001/api/credentials/requestsnotfound/${did}`;
+      }
+  
+      const token = localStorage.getItem('token');
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch credentials');
+      }
+      const data = await response.json();
+  
+      const filtered = data.filter(cred => 
+        status === 'Verified' ? cred.status === 'active' : cred.status === 'not found'
+      );
+      setCredentials(filtered);
+    } catch (err) {
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCredentials(activeTab === 'Verified' ? 'Verified' : 'Rejected');
+  }, [activeTab]);
 
   return (
     <div className="wallet-wrapper">
@@ -63,25 +76,27 @@ const WalletPage = () => {
         <h2 className="walletPage-subtitle">CREDENTIAL CARDS →</h2>
 
         <div className="walletPage-credential-list">
-          {credentials
-            .filter((cred) => cred.status === activeTab)
-            .map((cred) => (
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            credentials.map((cred) => (
               <div className="walletPage-credential-card" key={cred.id}>
                 <div className="walletPage-logo-wrapper">
-                  <img src={cred.logo} alt={cred.issuer} className="walletPage-logo" />
+                  <img src={cred.filePath} className="walletPage-logo" alt={cred.issuerName} />
                 </div>
                 <div className="walletPage-info">
-                  <h3>{cred.title}</h3>
-                  <p>Status: {cred.status === 'Verified' ? '✅ Verified' : '❌ Rejected'}</p>
+                  <h3>{cred.issuerName}</h3>
+                  <p>Status: {cred.status === 'active' ? '✅ Verified' : '❌ Rejected'}</p>
                   <button
                     className="walletPage-view-btn"
                     onClick={() => navigate(`/walletpage/credetails/${cred.id}`)}
-                    >
+                  >
                     VIEW DETAIL
-                </button>
+                  </button>
                 </div>
               </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

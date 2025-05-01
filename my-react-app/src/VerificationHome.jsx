@@ -1,88 +1,67 @@
-
-
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import "./VerificationHome.css"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./VerificationHome.css";
 
 const VerificationHome = () => {
+  const navigate = useNavigate();
+  const [verificationInput, setVerificationInput] = useState("");
+  const [hasVerified, setHasVerified] = useState(false);
 
-
-  const navigate = useNavigate()
-  const [verificationInput, setVerificationInput] = useState("")
-  const [hasVerified, setHasVerified] = useState(false)
-
-  // Check if there's verification data in sessionStorage on component mount
   useEffect(() => {
-    const verificationData = sessionStorage.getItem("verificationData")
+    const verificationData = sessionStorage.getItem("verificationData");
     if (verificationData) {
-      setHasVerified(true)
+      setHasVerified(true);
     }
-  }, [])
+  }, []);
 
   const handleInputChange = (e) => {
-    setVerificationInput(e.target.value)
-  }
+    setVerificationInput(e.target.value);
+  };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!verificationInput.trim()) {
-      alert("Please enter a DID or verification link")
-      return
+      alert("Please enter a verification link or ID");
+      return;
     }
+  
+    try {
+      // ✅ Extract the ID from the full URL if pasted
+      const input = verificationInput.trim();
+      const match = input.match(/\/verificationresult\/(.+)$/);
+      const verificationId = match ? match[1] : input; // Use just the ID if already clean
+  
+      const res = await fetch(`http://localhost:5001/api/verification/${verificationId}`);
+      if (!res.ok) throw new Error("Credential not found or expired");
+  
+      const { id, credential } = await res.json();
+  
+      sessionStorage.setItem("verificationData", JSON.stringify({ id, credential }));
+      navigate(`/verificationresult/${id}`);
+    } catch (err) {
+      alert("Verification failed: " + err.message);
+    }
+  };
 
-    // In a real app, you would validate the input and process it
-    // For this demo, we'll just navigate to the verification result page
-    const verificationId = `manual-${Date.now()}`
-
-    // Store some dummy data for the verification result page
-    sessionStorage.setItem(
-      "verificationData",
-      JSON.stringify({
-        id: verificationId,
-        credential: {
-          id: 2,
-          title: "Thammasat University",
-          type: "University",
-          info: "Thammasat University, Graduated Oct 2024",
-          status: "VERIFIED",
-          details: {
-            credential: "Bachelor Degree - TU",
-            issuer: "Thammasat University",
-            issueDate: "15 October 2023",
-            name: "Naphattra P.",
-            program: "Computer Engineering",
-            gpa: "3.65",
-            blockchainTx: "0x452ef... confirmed on Oct 15, 2023",
-          },
-        },
-      }),
-    )
-
-    // Set the verified state to true
-    setHasVerified(true)
-
-    navigate(`/verificationresult/${verificationId}`)
-  }
 
   const handleResultNavClick = () => {
     if (!hasVerified) {
-      alert("Please verify a credential first before viewing results")
+      alert("Please verify a credential first before viewing results");
     } else {
-      // Get the verification data from sessionStorage
-      const verificationData = JSON.parse(sessionStorage.getItem("verificationData"))
-      navigate(`/verificationresult/${verificationData.id}`)
+      const verificationData = JSON.parse(sessionStorage.getItem("verificationData"));
+      navigate(`/verificationresult/${verificationData.id}`);
     }
-  }
+  };
 
   const handlePaste = () => {
     navigator.clipboard
       .readText()
       .then((text) => {
-        setVerificationInput(text)
+        setVerificationInput(text);
       })
       .catch((err) => {
-        console.error("Failed to read clipboard: ", err)
-      })
-  }
+        console.error("Failed to read clipboard: ", err);
+      });
+  };
 
   return (
     <div className="verify-page-wrapper">
@@ -102,7 +81,7 @@ const VerificationHome = () => {
           <input
             type="text"
             className="verify-input"
-            placeholder="Paste User DID or Link To See Verification Result"
+            placeholder="Paste verification link"
             value={verificationInput}
             onChange={handleInputChange}
           />
@@ -118,8 +97,8 @@ const VerificationHome = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
           </button>
         </div>
@@ -129,14 +108,13 @@ const VerificationHome = () => {
             VERIFY NOW
           </button>
         </div>
+
         <div className="back-button-container">
-            <button className="bottom-left-back-btn" onClick={() => navigate("/")}>
-            ← Back
-            </button>
+          <button className="bottom-left-back-btn" onClick={() => navigate("/")}>← Back</button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default VerificationHome
+export default VerificationHome;

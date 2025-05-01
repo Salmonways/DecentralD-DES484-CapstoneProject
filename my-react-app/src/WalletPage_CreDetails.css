@@ -11,7 +11,7 @@
 .walletpage-cred-content {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: left;
   gap: 120px;
   margin-bottom: 100px;
 }
@@ -19,8 +19,9 @@
 .walletpage-cred-left {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: left;
   text-align: center;
+
 }
 
 .walletpage-cred-logo {
@@ -47,6 +48,7 @@
 
 .walletpage-cred-info {
   max-width: 900px;
+  right:500px;
 }
 
 .walletpage-cred-info h2 {

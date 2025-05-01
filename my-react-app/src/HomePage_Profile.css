@@ -126,7 +126,7 @@ body, html {
     margin-bottom: 5px;
     text-transform: uppercase;
     text-align: left;  /* Make sure label text aligns left */
-    margin-left:510px;
+    margin-left:370px;
 
   }
   .form-row label::option {
@@ -166,7 +166,7 @@ body, html {
     transition: background-color 0.3s;
     width: 100%;
     max-width: 600px;
-    margin-left: 524px;
+    margin-left: 380px;
   }
   
   .edit-button:hover {

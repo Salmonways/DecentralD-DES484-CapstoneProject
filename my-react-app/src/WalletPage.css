@@ -23,8 +23,9 @@
   .walletPage-tab {
     padding: 18px 36px;
     border-radius: 30px;
-    border: 2px solid #ccc;
+    border: 2px solid #0b0a0a;
     background-color: #f2f2f2;
+    color:black;
     cursor: pointer;
     font-weight: 600;
     font-size: 22px;

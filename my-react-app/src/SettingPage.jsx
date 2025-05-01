@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SettingPage.css';
 import { useNavigate } from 'react-router-dom';
 
 const SettingPage = () => {
   const navigate = useNavigate();
+  const [did, setDid] = useState(localStorage.getItem('did'));
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
-  const [username, setUsername] = useState('JohnDoe');
-  const [bio, setBio] = useState('Decentralized identity enthusiast.');
+  const [username, setUsername] = useState('');
+  const [fullname, setFullname] = useState('');
+  const [email, setEmail] = useState('');
+  const [dob, setDob] = useState('');
+  const [nationality, setNationality] = useState('');
+  const [bio, setBio] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
 
   const [privacy, setPrivacy] = useState(true);
@@ -19,17 +25,60 @@ const SettingPage = () => {
   const [notifSystem, setNotifSystem] = useState(true);
 
   const [language, setLanguage] = useState('English');
-
-  const [blockedUsers, setBlockedUsers] = useState(['did:example:1234', 'did:example:5678']);
-  const [connectedWallets, setConnectedWallets] = useState(['MetaMask', 'WalletConnect']);
-
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [connectedWallets, setConnectedWallets] = useState([]);
   const [twoFA, setTwoFA] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const res = await fetch(`http://localhost:5001/api/user/${did}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setUsername(data.username || '');
+        setFullname(data.fullName || '');
+        setEmail(data.email || '');
+        setDob(data.dateOfBirth || '');
+        setNationality(data.nationality || '');
+      } catch (err) {
+        console.error('Error fetching user info:', err);
+      }
+    };
+
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`http://localhost:5001/api/settings/${did}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setBio(data.bio || '');
+        setPrivacy(data.privacy);
+        setCredentialVisibility(data.credentialVisibility);
+        setDiscoverable(data.discoverable);
+        setNotifEmail(data.notifEmail);
+        setNotifCred(data.notifCred);
+        setNotifShare(data.notifShare);
+        setNotifSystem(data.notifSystem);
+        setLanguage(data.language);
+        setBlockedUsers(data.blockedUsers || []);
+        setConnectedWallets(data.connectedWallets || []);
+        setTwoFA(data.twoFA);
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+
+    fetchUserInfo();
+    fetchSettings();
+  }, [did, token]);
 
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setProfilePicture(URL.createObjectURL(file));
-    }
+    if (file) setProfilePicture(file);
   };
 
   const unblockUser = (did) => {
@@ -38,6 +87,61 @@ const SettingPage = () => {
 
   const disconnectWallet = (wallet) => {
     setConnectedWallets(connectedWallets.filter(w => w !== wallet));
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      // Save user profile
+      await fetch('http://localhost:5001/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ did, username, fullname, email, date_of_birth: dob, nationality })
+      });
+
+      // Save settings
+      const formData = new FormData();
+      formData.append('did', did);
+      formData.append('username', username);
+      formData.append('bio', bio);
+      formData.append('privacy', privacy);
+      formData.append('credentialVisibility', credentialVisibility);
+      formData.append('discoverable', discoverable);
+      formData.append('notifEmail', notifEmail);
+      formData.append('notifCred', notifCred);
+      formData.append('notifShare', notifShare);
+      formData.append('notifSystem', notifSystem);
+      formData.append('language', language);
+      formData.append('blockedUsers', JSON.stringify(blockedUsers));
+      formData.append('connectedWallets', JSON.stringify(connectedWallets));
+      formData.append('twoFA', twoFA);
+      if (profilePicture) formData.append('profilePicture', profilePicture);
+
+      await fetch('http://localhost:5001/api/settings/save', {
+        method: 'POST',
+        body: formData
+      });
+
+      // Change password if provided
+      if (currentPassword && newPassword) {
+        const passwordRes = await fetch('http://localhost:5001/api/user/password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ did, oldPassword: currentPassword, newPassword })
+        });
+
+        if (!passwordRes.ok) {
+          const errMsg = await passwordRes.json();
+          alert(`Password change failed: ${errMsg.error}`);
+        } else {
+          alert('Password changed successfully.');
+        }
+      }
+
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      alert('Failed to save settings.');
+    }
   };
 
   return (
@@ -51,51 +155,31 @@ const SettingPage = () => {
 
       <h1 className="setting-title">ACCOUNT SETTINGS</h1>
 
-      {/* Profile Info */}
       <div className="setting-section">
         <label>Profile Picture:</label>
         <input type="file" onChange={handleProfilePictureChange} />
-        {profilePicture && <img src={profilePicture} alt="Profile" className="profile-preview" />}
+        {profilePicture && <img src={URL.createObjectURL(profilePicture)} alt="Profile" className="profile-preview" />}
 
         <label>Username:</label>
-        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input type="text" placeholder={username} value={username} onChange={(e) => setUsername(e.target.value)} />
 
-        <label>Bio:</label>
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} />
+        <label>Full Name:</label>
+        <input type="text" placeholder={fullname} value={fullname} onChange={(e) => setFullname(e.target.value)} />
+
+        <label>Email:</label>
+        <input type="email" placeholder={email} value={email} onChange={(e) => setEmail(e.target.value)} />
+
+        <label>Date of Birth:</label>
+        <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+
+        <label>Nationality:</label>
+        <input type="text" placeholder={nationality} value={nationality} onChange={(e) => setNationality(e.target.value)} />
       </div>
 
-      {/* Privacy Settings */}
-      <div className="setting-section">
-        <label>Account Visibility:</label>
-        <button onClick={() => setPrivacy(!privacy)}>{privacy ? 'Private 🔒' : 'Public 🌐'}</button>
 
-        <label>Credential Visibility:</label>
-        <button onClick={() => setCredentialVisibility(!credentialVisibility)}>
-          {credentialVisibility ? 'Visible ✅' : 'Hidden ❌'}
-        </button>
 
-        <label>Profile Discoverability:</label>
-        <button onClick={() => setDiscoverable(!discoverable)}>
-          {discoverable ? 'Discoverable' : 'Hidden'}
-        </button>
-      </div>
 
-      {/* Notification Preferences */}
-      <div className="setting-section">
-        <label>Email Notifications:</label>
-        <input type="checkbox" checked={notifEmail} onChange={() => setNotifEmail(!notifEmail)} />
 
-        <label>Credential Alerts:</label>
-        <input type="checkbox" checked={notifCred} onChange={() => setNotifCred(!notifCred)} />
-
-        <label>Share Activity Notifications:</label>
-        <input type="checkbox" checked={notifShare} onChange={() => setNotifShare(!notifShare)} />
-
-        <label>System Updates:</label>
-        <input type="checkbox" checked={notifSystem} onChange={() => setNotifSystem(!notifSystem)} />
-      </div>
-
-      {/* Language Preferences */}
       <div className="setting-section">
         <label>Language:</label>
         <select value={language} onChange={(e) => setLanguage(e.target.value)}>
@@ -105,17 +189,8 @@ const SettingPage = () => {
         </select>
       </div>
 
-      {/* Blocked Users */}
-      <div className="setting-section">
-        <label>Blocked Users:</label>
-        {blockedUsers.map((did) => (
-          <div key={did} className="blocked-item">
-            {did} <button onClick={() => unblockUser(did)}>Unblock</button>
-          </div>
-        ))}
-      </div>
 
-      {/* Connected Wallets */}
+
       <div className="setting-section">
         <label>Connected Wallets / DIDs:</label>
         {connectedWallets.map((wallet) => (
@@ -125,22 +200,29 @@ const SettingPage = () => {
         ))}
       </div>
 
-      {/* Security */}
       <div className="setting-section">
-        <label>Two-Factor Authentication:</label>
-        <input type="checkbox" checked={twoFA} onChange={() => setTwoFA(!twoFA)} />
-        <p className="hint">We recommend enabling 2FA for extra security.</p>
+        <label>Change Password:</label>
+        <input
+          type="password"
+          placeholder="Current Password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="New Password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+        />
       </div>
 
-      {/* Danger Zone */}
       <div className="setting-section danger">
         <label>Danger Zone:</label>
-        <button className="danger-btn">Delete Account</button>
-        <button className="danger-btn">Reset to Default</button>
+
         <button
           className="danger-btn"
           onClick={() => {
-            localStorage.removeItem('token'); // or whatever key you use
+            localStorage.removeItem('token');
             navigate('/');
           }}
         >
@@ -148,10 +230,8 @@ const SettingPage = () => {
         </button>
       </div>
 
-      {/* Save & Reset */}
       <div className="setting-section">
-        <button className="save-btn">SAVE CHANGES</button>
-        <button className="reset-btn">RESET SETTINGS</button>
+        <button className="save-btn" onClick={handleSaveChanges}>SAVE CHANGES</button>
       </div>
     </div>
   );

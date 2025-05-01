@@ -1,40 +1,54 @@
-import placeholderImg from './assets/TU.png'; // adjust path accordingly
-import { useState, useEffect } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
-import "./VerificationResult.css"
+import placeholderImg from './assets/TU.png';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import "./VerificationResult.css";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const VerificationResult = () => {
-
-
-  const navigate = useNavigate()
-  const { id } = useParams()
-  const [verificationData, setVerificationData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [verificationData, setVerificationData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you would fetch this data from an API
-    // For this demo, we'll retrieve it from sessionStorage
-    const storedData = sessionStorage.getItem("verificationData")
-
+    const storedData = sessionStorage.getItem("verificationData");
     if (storedData) {
       try {
-        const parsedData = JSON.parse(storedData)
-        setVerificationData(parsedData)
+        const parsedData = JSON.parse(storedData);
+        if (parsedData.id === id) {
+          setVerificationData(parsedData);
+        }
       } catch (error) {
-        console.error("Error parsing verification data:", error)
+        console.error("Error parsing verification data:", error);
       }
     }
+    setLoading(false);
+  }, [id]);
 
-    setLoading(false)
-  }, [id])
+  const handleDownload = async () => {
+    const element = document.querySelector(".verification-container");
+    if (!element) return alert("Nothing to export!");
 
-  const handleDownload = () => {
-    // In a real app, this would generate and download a PDF
-    alert("PDF download would start in a real application")
-  }
+    try {
+      const canvas = await html2canvas(element);
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("verified_credential.pdf");
+    } catch (error) {
+      console.error("PDF download error:", error);
+      alert("Error generating PDF.");
+    }
+  };
 
   if (loading) {
-    return <div className="loading">Loading verification data...</div>
+    return <div className="loading">Loading verification data...</div>;
   }
 
   if (!verificationData || !verificationData.credential) {
@@ -44,11 +58,26 @@ const VerificationResult = () => {
         <p>The verification link is invalid or has expired.</p>
         <Link to="/">Return to Home</Link>
       </div>
-    )
+    );
   }
 
-  const { credential } = verificationData
-  const details = credential.details || {}
+  const { credential } = verificationData;
+  const {
+    title,
+    image,
+    status,
+    type,
+    details = {}
+  } = credential;
+
+  const {
+    credential: credTitle,
+    issuer,
+    issueDate,
+    name,
+    description,
+    blockchainTx
+  } = details;
 
   return (
     <div className="wallet-wrapper">
@@ -56,10 +85,9 @@ const VerificationResult = () => {
         <span className="nav-item" onClick={() => navigate("/verificationhome")}>
           VERIFY CREDENTIAL
         </span>
-        <span className="nav-item active" onClick={() => navigate("/verificationresult/:id")}>
+        <span className="nav-item active">
           VERIFICATION RESULTS
         </span>
-
       </nav>
 
       <h1 className="wallet-title">VERIFICATION RESULT</h1>
@@ -67,52 +95,47 @@ const VerificationResult = () => {
       <div className="verification-container">
         <div className="credential-card">
           <div className="credential-image">
-            <img src={credential.image || placeholderImg} alt={credential.title} />
+            <img src={image || placeholderImg} alt={title || "Credential"} />
           </div>
           <div className="credential-status-box">
-            <div className="credential-name">{details.credential || "Bachelor Degree - TU"}</div>
+            <div className="credential-name">{issuer || title || "Credential Title"}</div>
             <div className="credential-status">
-              Status: <span className="verified">✓ Verified</span>
+              Status: <span className="verified">{status || "✓ Verified"}</span>
             </div>
           </div>
         </div>
 
         <div className="credential-details">
-          <h2>{details.credential || "BACHELOR DEGREE - TU"}</h2>
+          <h2>{credTitle || title || "Credential Details"}</h2>
 
           <div className="detail-item">
-            <span className="detail-label">Credential:</span>
-            <span className="detail-value">{details.credential || "Bachelor Degree - TU"}</span>
+            <span className="detail-label">Credential Type:</span>
+            <span className="detail-value">{type || "Unknown"}</span>
           </div>
 
           <div className="detail-item">
             <span className="detail-label">Issuer:</span>
-            <span className="detail-value">{details.issuer || "Thammasat University"}</span>
+            <span className="detail-value">{issuer || "Unknown Issuer"}</span>
           </div>
 
           <div className="detail-item">
             <span className="detail-label">Issue Date:</span>
-            <span className="detail-value">{details.issueDate || "15 October 2023"}</span>
+            <span className="detail-value">{issueDate || "N/A"}</span>
           </div>
 
           <div className="detail-item">
             <span className="detail-label">Name:</span>
-            <span className="detail-value">{details.name || "Naphattra P."}</span>
+            <span className="detail-value">{name || "N/A"}</span>
           </div>
 
           <div className="detail-item">
-            <span className="detail-label">Program:</span>
-            <span className="detail-value">{details.program || "Computer Engineering"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">GPA:</span>
-            <span className="detail-value">{details.gpa || "3.65"}</span>
+            <span className="detail-label">Description:</span>
+            <span className="detail-value">{description || "N/A"}</span>
           </div>
 
           <div className="detail-item">
             <span className="detail-label">Blockchain Tx:</span>
-            <span className="detail-value">{details.blockchainTx || "0x452ef... confirmed on Oct 15, 2023"}</span>
+            <span className="detail-value">{blockchainTx || "N/A"}</span>
           </div>
         </div>
       </div>
@@ -121,22 +144,20 @@ const VerificationResult = () => {
         <a
           href="#"
           className="download-link"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
+          onClick={(e) => e.preventDefault()}
         >
           Download Verified Copy (PDF)
         </a>
-
         <button className="download-button" onClick={handleDownload}>
           DOWNLOAD
         </button>
       </div>
-      <button className="bottom-left-back-btn" onClick={() => navigate(-1)}>
-    ← Back
-    </button>
-    </div>
-  )
-}
 
-export default VerificationResult
+      <button className="bottom-left-back-btn" onClick={() => navigate(-1)}>
+        ← Back
+      </button>
+    </div>
+  );
+};
+
+export default VerificationResult;

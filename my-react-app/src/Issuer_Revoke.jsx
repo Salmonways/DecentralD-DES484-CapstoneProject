@@ -4,69 +4,89 @@ import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import tuImg from './assets/TU.png';
 
-const mockIssuedCredentials = [
-  {
-    id: 'cred:0x7a41fcde12',
-    title: 'BACHELOR DEGREE - TU',
-    issuerName: 'Thammasat University',
-    issuerDID: 'did:university:tu001',
-    subjectName: 'Jane Doe',
-    subjectDID: 'did:student:abc123',
-    type: 'Bachelor’s Degree',
-    description: 'Bachelor of Engineering (Computer Science), GPA 3.65',
-    status: 'Verified',
-    issueDate: '2023-10-15',
-    expirationDate: '2027-10-15',
-    tags: ['engineering', 'bachelor', 'tu'],
-    schemaUrl: 'https://schemas.org/tu-bachelor-cs',
-    cryptoProof: 'proof:0x9f1a...3cd7',
-    fileUrl: null,
-    logo: tuImg
-  },
-  {
-    id: 'cred:0x8a22bbf43a',
-    title: 'MASTER DEGREE - TU',
-    issuerName: 'Thammasat University',
-    issuerDID: 'did:university:tu001',
-    subjectName: 'John Smith',
-    subjectDID: 'did:student:def456',
-    type: 'Master’s Degree',
-    description: 'Master of Business Administration, GPA 3.90',
-    status: 'Verified',
-    issueDate: '2022-09-10',
-    expirationDate: '2026-09-10',
-    tags: ['mba', 'business', 'tu'],
-    schemaUrl: 'https://schemas.org/tu-mba',
-    cryptoProof: 'proof:0x5e2b...aa8f',
-    fileUrl: null,
-    logo: tuImg
-  }
-];
-
 const Issuer_Revoke = () => {
   const [credentials, setCredentials] = useState([]);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Simulate fetch
-    setCredentials(mockIssuedCredentials);
-  }, []);
+  const adminEmail = localStorage.getItem('adminEmail');
 
-  const handleRevoke = (id) => {
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      const adminEmail = localStorage.getItem('adminEmail');
+      console.log('📥 Fetching credentials for adminEmail:', adminEmail);
+  
+      if (!adminEmail) {
+        alert('User is not logged in!');
+        navigate('/login');
+        return;
+      }
+  
+      try {
+        const response = await fetch(`/api/credentials/requestss/${adminEmail}`);
+        console.log('✅ Raw fetch response:', response);
+      
+        const contentType = response.headers.get('content-type');
+        const rawText = await response.text();
+        console.log('📄 Raw response body:', rawText);
+      
+        if (!response.ok) {
+          console.error('❌ Server returned error response:', rawText);
+          return;
+        }
+      
+        if (contentType && contentType.includes('application/json')) {
+          const data = JSON.parse(rawText);
+          console.log('✅ Parsed credentials data:', data);
+          setCredentials(data);
+        } else {
+          throw new SyntaxError('Expected JSON but got something else.');
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching credentials:', error);
+      }
+    };
+  
+    fetchCredentials();
+  }, [adminEmail, navigate]);
+
+  const handleRevoke = async (id) => {
     const confirm = window.confirm('Are you sure you want to revoke this credential?');
     if (confirm) {
-      setCredentials(prev =>
-        prev.map(c => c.id === id ? { ...c, status: 'Revoked' } : c)
-      );
-      alert('Credential revoked successfully!');
+      try {
+        const response = await fetch(`/api/credentials/${id}/revoke`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ adminEmail }),
+        });
+        if (response.ok) {
+          setCredentials(prev =>
+            prev.map(c => c.id === id ? { ...c, status: 'revoked' } : c)
+          );
+          alert('Credential revoked successfully!');
+        } else {
+          alert('Failed to revoke credential');
+        }
+      } catch (error) {
+        console.error('Error revoking credential:', error);
+      }
     }
   };
-
   const filtered = credentials.filter(c =>
-    c.title.toLowerCase().includes(search.toLowerCase()) ||
-    c.subjectDID.toLowerCase().includes(search.toLowerCase()) ||
-    c.subjectName.toLowerCase().includes(search.toLowerCase())
+    c.id.toString().includes(search.toLowerCase()) ||         // Search by Credential ID
+    c.issuerName.toLowerCase().includes(search.toLowerCase()) || // Search by Issuer name
+    c.issuerDID.toLowerCase().includes(search.toLowerCase()) || // Search by Issuer DID
+    c.subjectName.toLowerCase().includes(search.toLowerCase()) || // Search by Subject name
+    c.subjectDID.toLowerCase().includes(search.toLowerCase()) ||  // Search by Subject DID
+    c.credentialType.toLowerCase().includes(search.toLowerCase()) || // Search by Type
+    c.description.toLowerCase().includes(search.toLowerCase()) ||   // Search by Description
+    (Array.isArray(c.tags) && c.tags.join(' ').toLowerCase().includes(search.toLowerCase())) || // Search by Tags (if tags are an array)
+    c.issueDate.toLowerCase().includes(search.toLowerCase()) ||   // Search by Issue Date
+    c.expirationDate.toLowerCase().includes(search.toLowerCase()) || // Search by Expiration Date
+    c.cryptoProof.toLowerCase().includes(search.toLowerCase()) || // Search by Crypto Proof
+    c.status.toLowerCase().includes(search.toLowerCase()) // Search by Status
   );
 
   return (
@@ -93,26 +113,25 @@ const Issuer_Revoke = () => {
         {filtered.length > 0 ? (
           filtered.map((cred) => (
             <div className="credential-card-issuer" key={cred.id}>
-              <img src={cred.logo} alt="logo" className="issuer-logo" />
+              <img src={cred.logo || tuImg} alt="logo" className="issuer-logo" />
               <div className="credential-info">
                 <h2>{cred.title}</h2>
                 <p><strong>Credential ID:</strong> {cred.id}</p>
                 <p><strong>Issuer:</strong> {cred.issuerName} ({cred.issuerDID})</p>
                 <p><strong>Subject:</strong> {cred.subjectName} ({cred.subjectDID})</p>
-                <p><strong>Type:</strong> {cred.type}</p>
+                <p><strong>Type:</strong> {cred.credentialType}</p>
                 <p><strong>Description:</strong> {cred.description}</p>
-                <p><strong>Tags:</strong> {cred.tags ? cred.tags.join(', ') : 'N/A'}</p>
+                <p><strong>Tags:</strong> {Array.isArray(cred.tags) ? cred.tags.join(', ') : 'N/A'}</p>
                 <p><strong>Issue Date:</strong> {cred.issueDate}</p>
                 <p><strong>Expiration Date:</strong> {cred.expirationDate}</p>
-                <p><strong>Schema URL:</strong> <a href={cred.schemaUrl} target="_blank" rel="noreferrer">{cred.schemaUrl}</a></p>
                 <p><strong>Crypto Proof:</strong> {cred.cryptoProof}</p>
-                <p><strong>Status:</strong> {cred.status === 'Verified' ? '✅ Verified' : '❌ Revoked'}</p>
+                <p><strong>Status:</strong> {cred.status}</p>
                 <button
                   className="revoke-button"
                   onClick={() => handleRevoke(cred.id)}
-                  disabled={cred.status === 'Revoked'}
+                  disabled={cred.status === 'revoked'}
                 >
-                  {cred.status === 'Revoked' ? 'REVOKED' : 'REVOKE'}
+                  {cred.status === 'revoked' ? 'REVOKED' : 'REVOKE'}
                 </button>
               </div>
             </div>

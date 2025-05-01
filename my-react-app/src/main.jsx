@@ -34,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Route path="/homepage_profile" element={<HomePage_Profile />} />
       <Route path="/homepage_addcre" element={<HomePage_AddCre />} />
       <Route path="/walletpage" element={<WalletPage />} />
+      {/* <Route path="/walletpage/credetails/:id" element={<WalletPage_CreDetails />} /> */}
       <Route path="/walletpage/credetails/:id" element={<WalletPage_CreDetails />} />
       <Route path="settingpage" element={<SettingPage />} />
       <Route path="sharepage" element={<SharePage />} />
