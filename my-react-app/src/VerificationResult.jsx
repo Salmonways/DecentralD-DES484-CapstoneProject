@@ -4,13 +4,30 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import "./VerificationResult.css";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { getContract } from './utils/blockchain'; // ✅ Import contract utility
 
 const VerificationResult = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [verificationData, setVerificationData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [onChainValid, setOnChainValid] = useState(null); // ✅ Track blockchain status
 
+
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const contract = await getContract();
+        const valid = await contract.isCredentialValid("your-credential-id");
+        console.log("🟢 On-chain validity:", valid);
+      } catch (err) {
+        console.error("🔴 Contract call failed:", err);
+      }
+    };
+    verify();
+  }, []);
+  
+  // Load session data
   useEffect(() => {
     const storedData = sessionStorage.getItem("verificationData");
     if (storedData) {
@@ -25,6 +42,25 @@ const VerificationResult = () => {
     }
     setLoading(false);
   }, [id]);
+
+  // Blockchain validity check
+  useEffect(() => {
+    const checkOnChainValidity = async () => {
+      if (!verificationData || !verificationData.credential) return;
+
+      try {
+        const contract = await getContract();
+        const valid = await contract.isCredentialValid(verificationData.credential.credentialID);
+        console.log("✅ Blockchain valid:", valid);
+        setOnChainValid(valid);
+      } catch (err) {
+        console.error("❌ Blockchain check error:", err);
+        setOnChainValid(false);
+      }
+    };
+
+    checkOnChainValidity();
+  }, [verificationData]);
 
   const handleDownload = async () => {
     const element = document.querySelector(".verification-container");
@@ -85,9 +121,7 @@ const VerificationResult = () => {
         <span className="nav-item" onClick={() => navigate("/verificationhome")}>
           VERIFY CREDENTIAL
         </span>
-        <span className="nav-item active">
-          VERIFICATION RESULTS
-        </span>
+        <span className="nav-item active">VERIFICATION RESULTS</span>
       </nav>
 
       <h1 className="wallet-title">VERIFICATION RESULT</h1>
@@ -95,7 +129,11 @@ const VerificationResult = () => {
       <div className="verification-container">
         <div className="credential-card">
           <div className="credential-image">
-            <img src={image || placeholderImg} alt={title || "Credential"} />
+          {cred.filePath ? (
+              <img src={cred.filePath} alt="logo" className="issuer-logo" />
+            ) : (
+              <div className="issuer-logo-fallback">No Image</div>
+            )}
           </div>
           <div className="credential-status-box">
             <div className="credential-name">{issuer || title || "Credential Title"}</div>
@@ -137,20 +175,21 @@ const VerificationResult = () => {
             <span className="detail-label">Blockchain Tx:</span>
             <span className="detail-value">{blockchainTx || "N/A"}</span>
           </div>
+
+          <div className="detail-item">
+            <span className="detail-label">On-Chain Status:</span>
+            <span className="detail-value">
+              {onChainValid === null ? "Checking..." : onChainValid ? "✅ Valid" : "❌ Invalid"}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="download-section">
-        <a
-          href="#"
-          className="download-link"
-          onClick={(e) => e.preventDefault()}
-        >
+        <a href="#" className="download-link" onClick={(e) => e.preventDefault()}>
           Download Verified Copy (PDF)
         </a>
-        <button className="download-button" onClick={handleDownload}>
-          DOWNLOAD
-        </button>
+        <button className="download-button" onClick={handleDownload}>DOWNLOAD</button>
       </div>
 
       <button className="bottom-left-back-btn" onClick={() => navigate(-1)}>

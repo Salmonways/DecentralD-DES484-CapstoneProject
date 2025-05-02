@@ -2,6 +2,7 @@ import React, { useState , useEffect} from 'react';
 import './Issuer_new.css';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 const Issuer_new = () => {
   const [title, setTitle] = useState('');
@@ -19,9 +20,7 @@ const Issuer_new = () => {
   const navigate = useNavigate();
   const [adminEmail] = useState(localStorage.getItem('adminEmail')); // or use JWT if you prefer
   const [issuerDID, setIssuerDID] = useState('');
-  const [credentialId, setCredentialId] = useState('');
-
-
+  const [credentialId, setCredentialId] = useState(() => `cred-${Date.now()}`);
 
   useEffect(() => {
     const fetchIssuerInfo = async () => {
@@ -89,12 +88,11 @@ const Issuer_new = () => {
 
 
           <label>Credential ID</label>
-            <input
-              type="text"
-              placeholder="Credential ID"
-              value={credentialId}
-              onChange={(e) => setCredentialId(e.target.value)}
-            />
+          <input
+            type="text"
+            value={credentialId}
+            readOnly
+          />
           <label>Credential Type (e.g., DegreeCertificate)</label>
             <select name="Credential Type" value={type}  onChange={(e) => setType(e.target.value)}>
               <option value="">Select Credential Type</option>
@@ -114,10 +112,6 @@ const Issuer_new = () => {
 
           <label>Expiration Date</label>
           <input type="date" value={expirationDate} onChange={(e) => setExpirationDate(e.target.value)} className="date-select" />
-
-
-          <label>Cryptographic Proof</label>
-          <input type="text" placeholder="Cryptographic Proof" value={cryptoProof} readOnly />
 
           <label>Issuer Name / Organization</label>
           <input type="text" placeholder="Issuer Name / Organization" value={issuerName} onChange={(e) => setIssuerName(e.target.value)} readOnly />

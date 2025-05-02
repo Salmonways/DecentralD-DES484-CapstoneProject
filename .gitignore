@@ -1,0 +1,80 @@
+# Dependencies
+node_modules
+/.pnp
+.pnp.js
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Hardhat files
+/cache
+/artifacts
+**/.cache
+**/artifacts
+my-react-app/blockchain/artifacts/
+my-react-app/blockchain/cache/
+
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/coverage
+/coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+/coverage
+/.nyc_output
+
+# Production build files
+/build
+/dist
+/out
+/.next
+my-react-app/build
+
+# Uploaded files and media
+my-react-app/backend/uploads/
+uploads/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sublime-workspace
+
+# Misc
+.vercel
+.netlify
+.serverless/
+.fusebox/
+.dynamodb/

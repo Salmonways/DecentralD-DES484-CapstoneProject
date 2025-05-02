@@ -18,7 +18,7 @@ const JWT_SECRET = 'your_jwt_secret_key';
 
 const app = express();
 const port = 5001;
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -314,92 +314,6 @@ app.put('/api/profile/:did', async (req, res) => {
 
 });  
   
-// // ------------------- SETTINGS API (POST /api/settings/save) -------------------
-
-
-// app.post('/api/settings/save', upload.single('profilePicture'), async (req, res) => {
-//   const {
-//     did,
-//     username,
-//     bio,
-//     privacy,
-//     credentialVisibility,
-//     discoverable,
-//     notifEmail,
-//     notifCred,
-//     notifShare,
-//     notifSystem,
-//     language,
-//     blockedUsers,
-//     connectedWallets,
-//     twoFA
-//   } = req.body;
-
-//   const profilePicture = req.file ? req.file.filename : null;
-
-//   try {
-//     // Check if settings already exist
-//     const [existing] = await pool.query('SELECT id FROM user_settings WHERE did = ?', [did]);
-
-//     if (existing.length > 0) {
-//       // Update settings
-//       await pool.query(
-//         `UPDATE user_settings SET
-//           username=?, bio=?, privacy=?, credentialVisibility=?, discoverable=?,
-//           notifEmail=?, notifCred=?, notifShare=?, notifSystem=?, language=?,
-//           blockedUsers=?, connectedWallets=?, twoFA=?${profilePicture ? ', profilePicture=?' : ''}
-//          WHERE did=?`,
-//         profilePicture
-//           ? [username, bio, privacy, credentialVisibility, discoverable, notifEmail, notifCred, notifShare, notifSystem, language, JSON.stringify(blockedUsers), JSON.stringify(connectedWallets), twoFA, profilePicture, did]
-//           : [username, bio, privacy, credentialVisibility, discoverable, notifEmail, notifCred, notifShare, notifSystem, language, JSON.stringify(blockedUsers), JSON.stringify(connectedWallets), twoFA, did]
-//       );
-//     } else {
-//       // Insert new settings
-//       await pool.query(
-//         `INSERT INTO user_settings
-//           (did, username, bio, privacy, credentialVisibility, discoverable,
-//            notifEmail, notifCred, notifShare, notifSystem, language, blockedUsers, connectedWallets, twoFA, profilePicture)
-//          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-//         [did, username, bio, privacy, credentialVisibility, discoverable,
-//           notifEmail, notifCred, notifShare, notifSystem, language,
-//           JSON.stringify(blockedUsers), JSON.stringify(connectedWallets), twoFA, profilePicture]
-//       );
-//     }
-
-//     res.json({ message: 'Settings saved successfully!' });
-//   } catch (err) {
-//     console.error('Settings save error:', err);
-//     res.status(500).json({ error: 'Failed to save settings' });
-//   }
-// });
-
-// // ------------------- SETTINGS GET API (GET /api/settings/:did) -------------------
-// app.get('/api/settings/:did', async (req, res) => {
-//   const { did } = req.params;
-
-//   try {
-//     const [rows] = await pool.query('SELECT * FROM user_settings WHERE did = ?', [did]);
-
-//     if (rows.length === 0) {
-//       return res.status(404).json({ error: 'Settings not found' });
-//     }
-
-//     const settings = rows[0];
-//     settings.blockedUsers = settings.blockedUsers ? JSON.parse(settings.blockedUsers) : [];
-//     settings.connectedWallets = settings.connectedWallets ? JSON.parse(settings.connectedWallets) : [];
-
-//     res.json(settings);
-//   } catch (err) {
-//     console.error('Fetch settings error:', err);
-//     res.status(500).json({ error: 'Failed to fetch settings' });
-//   }
-// });
-
-
-
-
-
-
 
 
 
@@ -810,51 +724,243 @@ app.delete('/api/user/delete/:did', async (req, res) => {
 
 
 
+const { ethers } = require("ethers");
 
+require("dotenv").config({ path: "../blockchain/.env" });
 
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8545";
 
+if (!PRIVATE_KEY || !CONTRACT_ADDRESS) {
+  throw new Error("❌ PRIVATE_KEY or CONTRACT_ADDRESS missing in .env");
+}
 
+const abiPath = path.join(__dirname, "../blockchain/artifacts/contracts/CredentialRegistry.sol/CredentialRegistry.json");
+const { abi } = JSON.parse(fs.readFileSync(abiPath));
 
-
-
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 
 
 setInterval(async () => {
   try {
-    // Step 1: Fetch credential requests that have NULL or 'not found' status
     const [requests] = await pool.query(
       "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
     );
 
-    // Step 2: Process each credential request
+    if (requests.length === 0) return;
+
+    console.log(`🕐 Running credential check | Found ${requests.length} pending requests`);
+
+    const seen = new Set();
+
     for (const request of requests) {
-      // Step 3: Check for a match in the credentials table
-      const [match] = await pool.query(
-        'SELECT credentialID FROM credentials WHERE credentialID = ?',
-        [request.credentialID]
+      const { id, credentialID } = request;
+
+      if (seen.has(credentialID)) continue;
+      seen.add(credentialID);
+
+      console.log(`🔍 Checking credential ID: ${credentialID}`);
+
+      // Mark rows as 'processing' to prevent infinite loop
+      await pool.query(
+        "UPDATE credential_requests SET status = 'processing' WHERE credentialID = ? AND (status IS NULL OR status = 'not found')",
+        [credentialID]
+      );
+      const [rowsUser] = await pool.query(
+        "SELECT submittedBy FROM credential_requests WHERE credentialID = ?",
+        [credentialID]
+      );
+      const [rowsIssuer] = await pool.query(
+        "SELECT submittedBy FROM credentials WHERE credentialID = ?",
+        [credentialID]
+      );
+      
+
+      const submittedByUser = rowsUser.map(r => r.submittedBy);
+      const submittedByIssuer = rowsIssuer.map(r => r.submittedBy);
+      const hasIssuer = submittedByIssuer.includes('issuer');
+      const hasUser = submittedByUser.includes('user');
+      console.log(`📥 Submitted by issuer:`, hasIssuer);
+      console.log(`📥 Submitted by user:`, hasUser);
+
+
+      // Check blockchain status
+      const isOnChain = await contract.isCredentialValid(credentialID);
+      console.log(`🧾 Blockchain status: ${isOnChain}`);
+
+      let finalStatus = 'not found';
+
+      if (isOnChain) {
+        console.warn(`❌ Already on blockchain: ${credentialID}`);
+        finalStatus = 'duplicate';
+      } else if (hasIssuer && hasUser) {
+        try {
+          const tx = await contract.registerCredential(credentialID);
+          await tx.wait();
+          console.log(`✅ Registered on blockchain: ${credentialID}`);
+          finalStatus = 'active';
+        } catch (err) {
+          console.error(`❌ Blockchain error:`, err.message);
+          finalStatus = 'blockchain error';
+        }
+      } else {
+        console.warn(`⚠️ Waiting for both issuer and user submission: ${credentialID}`);
+      }
+
+      // Only update credential_request rows that are still processing
+      await pool.query(
+        "UPDATE credential_requests SET status = ? WHERE credentialID = ? AND status = 'processing'",
+        [finalStatus, credentialID]
       );
 
-      // Step 4: Determine the status based on whether a match is found
-      const status = match.length > 0 ? 'active' : 'not found';
-
-      // Step 5: Update the status in the credential_requests table
       await pool.query(
-        'UPDATE credential_requests SET status = ? WHERE id = ?',
-        [status, request.id]
-      );
-
-      // Step 6: Update the status in the credentials table
-      await pool.query(
-        'UPDATE credentials SET status = ? WHERE credentialID = ?',
-        [status, request.credentialID]
+        "UPDATE credentials SET status = ? WHERE credentialID = ?",
+        [finalStatus, credentialID]
       );
     }
-
   } catch (err) {
-    console.error('Error during scheduled credential check:', err);
+    console.error("❌ Loop Error:", err);
   }
-}, 1000);  // Run every second
+}, 1000);
+
+
+
+// setInterval(async () => {
+//   try {
+//     const [requests] = await pool.query(
+//       "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
+//     );
+
+//     if (requests.length === 0) return;
+
+//     console.log(`🕐 Running credential check | Found ${requests.length} pending requests`);
+
+//     const seen = new Set();
+
+//     for (const request of requests) {
+//       const { id, credentialID } = request;
+
+//       if (seen.has(credentialID)) continue;
+//       seen.add(credentialID);
+
+//       console.log(`🔍 Checking credential ID: ${credentialID}`);
+
+//       // Mark all rows with this ID as "processing"
+//       await pool.query(
+//         "UPDATE credential_requests SET status = 'processing' WHERE credentialID = ? AND (status IS NULL OR status = 'not found')",
+//         [credentialID]
+//       );
+
+//       const [match] = await pool.query(
+//         "SELECT * FROM credentials WHERE credentialID = ?",
+//         [credentialID]
+//       );
+
+//       console.log(`📦 Matches in credentials table: ${match.length}`);
+
+//       // If credential is already active on blockchain, skip processing
+//       const isOnChain = await contract.isCredentialValid(credentialID);
+//       console.log(`🧾 Blockchain status of ${credentialID}: ${isOnChain}`);
+
+//       if (isOnChain) {
+//         console.warn(`❌ Already on blockchain: ${credentialID}`);
+//         await pool.query("UPDATE credential_requests SET status = 'duplicated' WHERE credentialID = ?", [credentialID]);
+//         continue;
+//       }
+
+//       let finalStatus = 'not found';
+
+//       // If only one match found in credentials table (ensure it's a valid match for both user and issuer)
+
+//       try {
+//         const tx = await contract.registerCredential(credentialID);
+//         await tx.wait();
+//         console.log(`✅ Saved to blockchain: ${credentialID}`);
+//         finalStatus = 'active';
+//       } catch (err) {
+//         console.error(`❌ Blockchain error for ${credentialID}:`, err.message);
+//         finalStatus = 'blockchain error';
+//       }
+
+
+//       // Update status in credential_requests table and credentials table
+//       await pool.query(
+//         "UPDATE credential_requests SET status = ? WHERE credentialID = ?",
+//         [finalStatus, credentialID]
+//       );
+
+//       await pool.query(
+//         "UPDATE credentials SET status = ? WHERE credentialID = ?",
+//         [finalStatus, credentialID]
+//       );
+//     }
+//   } catch (err) {
+//     console.error("❌ Loop Error:", err);
+//   }
+// }, 1000);
+
+// setInterval(async () => {
+//   try {
+//     const [requests] = await pool.query(
+//       "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
+//     );
+
+//     for (const request of requests) {
+//       const [match] = await pool.query(
+//         'SELECT credentialID FROM credentials WHERE credentialID = ?',
+//         [request.credentialID]
+//       );
+
+//       let status = 'not found';
+
+//       // Check if already registered on blockchain
+//       const isOnChain = await contract.isCredentialValid(request.credentialID);
+//       if (isOnChain) {
+//         status = 'duplicate';
+//         console.warn(`❌ Credential already on blockchain: ${request.credentialID}`);
+//         await pool.query('UPDATE credential_requests SET status = ? WHERE id = ?', [status, request.id]);
+//         continue; // skip the rest, as it's already on the blockchain
+//       }
+
+//       // If there's exactly 1 match in the credentials table, then it's safe to proceed
+//       if (match.length === 1) {
+//         // Both issuer and user have matched the same credential, we can save it to the blockchain
+//         try {
+//           const tx = await contract.registerCredential(request.credentialID);
+//           await tx.wait();
+//           console.log(`✅ Saved to blockchain: ${request.credentialID}`);
+//           status = 'active';  // Set status to 'active' after blockchain registration
+//         } catch (err) {
+//           console.error(`❌ Blockchain error for ${request.credentialID}:`, err.message);
+//           status = 'blockchain error';  // Set status as 'blockchain error' in case of failure
+//         }
+//       } else if (match.length > 1) {
+//         // If more than one match is found, this is a duplicate
+//         status = 'duplicate';
+//         console.warn(`❌ Duplicate credential detected in DB: ${request.credentialID}`);
+//       }
+
+//       // Update status in both tables
+//       await pool.query(
+//         'UPDATE credential_requests SET status = ? WHERE id = ?',
+//         [status, request.id]
+//       );
+
+//       await pool.query(
+//         'UPDATE credentials SET status = ? WHERE credentialID = ?',
+//         [status, request.credentialID]
+//       );
+//     }
+//   } catch (err) {
+//     console.error('Error during scheduled credential check:', err);
+//   }
+// }, 1000); // runs every 1 second
+
+
 
 
 // ------------------- START SERVER -------------------

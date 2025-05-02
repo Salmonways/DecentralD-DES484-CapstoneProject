@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import './Issuer_Revoke.css';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import tuImg from './assets/TU.png';
 
 const Issuer_Revoke = () => {
   const [credentials, setCredentials] = useState([]);
@@ -10,7 +9,6 @@ const Issuer_Revoke = () => {
   const navigate = useNavigate();
 
   const adminEmail = localStorage.getItem('adminEmail');
-
   useEffect(() => {
     const fetchCredentials = async () => {
       const adminEmail = localStorage.getItem('adminEmail');
@@ -24,24 +22,29 @@ const Issuer_Revoke = () => {
   
       try {
         const response = await fetch(`/api/credentials/requestss/${adminEmail}`);
-        console.log('✅ Raw fetch response:', response);
-      
-        const contentType = response.headers.get('content-type');
-        const rawText = await response.text();
-        console.log('📄 Raw response body:', rawText);
-      
+  
         if (!response.ok) {
-          console.error('❌ Server returned error response:', rawText);
+          const errorText = await response.text();
+          console.error('❌ Server returned error response:', errorText);
           return;
         }
-      
-        if (contentType && contentType.includes('application/json')) {
-          const data = JSON.parse(rawText);
-          console.log('✅ Parsed credentials data:', data);
-          setCredentials(data);
-        } else {
-          throw new SyntaxError('Expected JSON but got something else.');
+  
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('❌ Unexpected response format');
+          return;
         }
+  
+        const data = await response.json();
+  
+        // ✅ Fix filePath to be fully qualified
+        const updated = data.map((cred) => ({
+          ...cred,
+          filePath: cred.filePath ? `http://localhost:5001${cred.filePath}` : null,
+        }));
+  
+        console.log('✅ Updated credentials:', updated);
+        setCredentials(updated);
       } catch (error) {
         console.error('🚨 Error fetching credentials:', error);
       }
@@ -113,7 +116,7 @@ const Issuer_Revoke = () => {
         {filtered.length > 0 ? (
           filtered.map((cred) => (
             <div className="credential-card-issuer" key={cred.id}>
-              <img src={cred.logo || tuImg} alt="logo" className="issuer-logo" />
+              <img src={cred.filePath} alt="logo" className="issuer-logo" />
               <div className="credential-info">
                 <h2>{cred.title}</h2>
                 <p><strong>Credential ID:</strong> {cred.id}</p>
