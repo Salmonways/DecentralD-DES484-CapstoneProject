@@ -179,27 +179,6 @@ const SettingPage = () => {
 
 
 
-
-      <div className="setting-section">
-        <label>Language:</label>
-        <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-          <option>English</option>
-          <option>Thai</option>
-          <option>Spanish</option>
-        </select>
-      </div>
-
-
-
-      <div className="setting-section">
-        <label>Connected Wallets / DIDs:</label>
-        {connectedWallets.map((wallet) => (
-          <div key={wallet} className="wallet-item">
-            {wallet} <button onClick={() => disconnectWallet(wallet)}>Disconnect</button>
-          </div>
-        ))}
-      </div>
-
       <div className="setting-section">
         <label>Change Password:</label>
         <input

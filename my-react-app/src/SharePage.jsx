@@ -5,8 +5,6 @@ import "./SharePage.css"
 
 const SharePage = () => {
   const navigate = useNavigate()
-  const [acceptTerms, setAcceptTerms] = useState(false)
-  const [privacyMode, setPrivacyMode] = useState(false)
   const [selectedCredential, setSelectedCredential] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
@@ -27,7 +25,8 @@ const SharePage = () => {
         if (!res.ok) throw new Error("Failed to fetch credentials");
 
         const data = await res.json();
-        setCredentials(data);
+        const activeOnly = data.filter(c => c.status === 'active');
+        setCredentials(activeOnly);
       } catch (error) {
         console.error("Error fetching credentials:", error);
       }
@@ -43,57 +42,27 @@ const SharePage = () => {
   }, [selectedCredential])
 
   const generateQrCode = async (credentialId) => {
-    setIsGenerating(true);
-  
-    setTimeout(async () => {
-      const cred = credentials.find((c) => c.id === credentialId);
-      const verificationId = `cred-${credentialId}-${Date.now()}`;
-      const link = `/verificationresult/${verificationId}`;
-  
-      const fullCredential = {
-        id: cred.id,
-        title: cred.issuerName,
-        type: cred.credentialType,
-        status: cred.status,
-        image: `http://localhost:5001${cred.filePath}`,
-        details: {
-          credential: cred.credentialType,
-          issuer: cred.issuerName,
-          issueDate: cred.requestedDate,
-          name: cred.subjectDID,
-          description: cred.description,           // optional: populate if available
-          blockchainTx: "Pending issuance"
-        }
-      };
-  
-      // Store on backend
-      await fetch('http://localhost:5001/api/verification/store', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: verificationId,
-          credential: fullCredential,
-        }),
-      });
-  
-      // Store in sessionStorage for instant redirect
-      sessionStorage.setItem('verificationData', JSON.stringify({
-        id: verificationId,
-        credential: fullCredential,
-      }));
-  
-      setVerificationLink(link);
-      setIsGenerating(false);
-    }, 500);
-  };
+  setIsGenerating(true);
 
-  const handleCheckboxChange = () => {
-    setAcceptTerms(!acceptTerms)
+  const cred = credentials.find((c) => c.id === credentialId);
+  if (!cred) {
+    console.error("Credential not found!");
+    setIsGenerating(false);
+    return;
   }
 
-  const handlePrivacyToggle = () => {
-    setPrivacyMode(!privacyMode)
-  }
+  const verificationId = cred.credentialID; 
+  const link = `/verificationresult/${verificationId}`;
+  
+  sessionStorage.setItem("verificationData", JSON.stringify({ id: verificationId, credential: cred }));
+
+  setVerificationLink(link);
+  setIsGenerating(false);
+};
+
+
+
+
 
   const handleCredentialSelect = (credentialId) => {
     if (selectedCredential === credentialId) return
@@ -102,12 +71,10 @@ const SharePage = () => {
   }
 
   const handleShareNow = () => {
-    if (acceptTerms && selectedCredential) {
+    if ( selectedCredential) {
       console.log(`Sharing credential ID: ${selectedCredential}`)
       setShowPopup(true)
-    } else if (!acceptTerms) {
-      alert("Please accept the terms to share credentials")
-    } else {
+    }  else {
       alert("Please select a credential to share")
     }
   }
@@ -210,13 +177,9 @@ const SharePage = () => {
 
           <div className="terms-section">
             <label className="terms-checkbox">
-              <input type="checkbox" checked={acceptTerms} onChange={handleCheckboxChange} />
-              <span className="checkmark"></span>I accept the terms
             </label>
 
-            <button className="privacy-toggle" onClick={handlePrivacyToggle}>
-              Privacy Mode ({privacyMode ? "On" : "Off"})
-            </button>
+
           </div>
         </div>
       </div>
@@ -224,7 +187,7 @@ const SharePage = () => {
       <button
         className="share-button"
         onClick={handleShareNow}
-        disabled={!acceptTerms || !selectedCredential || isGenerating}
+        disabled={ !selectedCredential || isGenerating}
       >
         {isGenerating ? "GENERATING QR CODE..." : "SHARE NOW"}
       </button>

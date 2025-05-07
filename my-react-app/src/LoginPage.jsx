@@ -16,7 +16,7 @@ const LoginPage = () => {
       ...prev,
       [name]: value,
     }));
-    setMsg(""); // clear error message when editing
+    setMsg(""); 
   };
 
   const handleLogin = async (e) => {

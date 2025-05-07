@@ -25,7 +25,6 @@ const VerificationHome = () => {
     }
   
     try {
-      // ✅ Extract the ID from the full URL if pasted
       const input = verificationInput.trim();
       const match = input.match(/\/verificationresult\/(.+)$/);
       const verificationId = match ? match[1] : input; // Use just the ID if already clean

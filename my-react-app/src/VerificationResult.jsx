@@ -4,63 +4,46 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import "./VerificationResult.css";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { getContract } from './utils/blockchain'; // ✅ Import contract utility
+import { getContract } from './utils/blockchain';
 
 const VerificationResult = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [verificationData, setVerificationData] = useState(null);
+  const [credential, setCredential] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [onChainValid, setOnChainValid] = useState(null); // ✅ Track blockchain status
-
+  const [onChainValid, setOnChainValid] = useState(null);
 
   useEffect(() => {
-    const verify = async () => {
-      try {
-        const contract = await getContract();
-        const valid = await contract.isCredentialValid("your-credential-id");
-        console.log("🟢 On-chain validity:", valid);
-      } catch (err) {
-        console.error("🔴 Contract call failed:", err);
+    const fetchVerificationData = async () => {
+      const res = await fetch(`http://localhost:5001/api/verification/detail/${id}`);
+      if (!res.ok) {
+        setLoading(false);
+        return setCredential(null);
       }
-    };
-    verify();
-  }, []);
   
-  // Load session data
-  useEffect(() => {
-    const storedData = sessionStorage.getItem("verificationData");
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData);
-        if (parsedData.id === id) {
-          setVerificationData(parsedData);
-        }
-      } catch (error) {
-        console.error("Error parsing verification data:", error);
-      }
-    }
-    setLoading(false);
+      const data = await res.json();
+      setCredential(data);
+      setLoading(false);
+    };
+  
+    fetchVerificationData();
   }, [id]);
 
-  // Blockchain validity check
   useEffect(() => {
     const checkOnChainValidity = async () => {
-      if (!verificationData || !verificationData.credential) return;
-
+      if (!credential?.credentialID) return;
       try {
         const contract = await getContract();
-        const valid = await contract.isCredentialValid(verificationData.credential.credentialID);
-        console.log("✅ Blockchain valid:", valid);
+        const valid = await contract.isCredentialValid(credential.credentialID);
         setOnChainValid(valid);
       } catch (err) {
-        console.error("❌ Blockchain check error:", err);
+        console.error("Blockchain check error:", err);
         setOnChainValid(false);
       }
     };
 
     checkOnChainValidity();
-  }, [verificationData]);
+  }, [credential]);
 
   const handleDownload = async () => {
     const element = document.querySelector(".verification-container");
@@ -69,58 +52,45 @@ const VerificationResult = () => {
     try {
       const canvas = await html2canvas(element);
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("p", "mm", "a4");
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save("verified_credential.pdf");
-    } catch (error) {
-      console.error("PDF download error:", error);
-      alert("Error generating PDF.");
+    } catch (err) {
+      console.error("PDF download error:", err);
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading verification data...</div>;
-  }
-
-  if (!verificationData || !verificationData.credential) {
+  if (loading) return <div className="loading">Loading credential...</div>;
+  if (!credential) {
     return (
       <div className="verification-error">
         <h2>Verification Failed</h2>
-        <p>The verification link is invalid or has expired.</p>
+        <p>The verification link is invalid or expired.</p>
         <Link to="/">Return to Home</Link>
       </div>
     );
   }
 
-  const { credential } = verificationData;
   const {
-    title,
-    image,
-    status,
-    type,
-    details = {}
+    credentialType,
+    issuerName,
+    created_at,
+    credentialID,
+    description,
+    filePath,
+    status
   } = credential;
 
-  const {
-    credential: credTitle,
-    issuer,
-    issueDate,
-    name,
-    description,
-    blockchainTx
-  } = details;
+  const safeDate = created_at ? new Date(created_at).toLocaleDateString() : "N/A";
+  const safeStatus = status || "unknown";
 
   return (
     <div className="wallet-wrapper">
       <nav className="verification-nav-result">
-        <span className="nav-item" onClick={() => navigate("/verificationhome")}>
-          VERIFY CREDENTIAL
-        </span>
+        <span className="nav-item" onClick={() => navigate("/verificationhome")}>VERIFY CREDENTIAL</span>
         <span className="nav-item active">VERIFICATION RESULTS</span>
       </nav>
 
@@ -129,57 +99,35 @@ const VerificationResult = () => {
       <div className="verification-container">
         <div className="credential-card">
           <div className="credential-image">
-          {cred.filePath ? (
-              <img src={cred.filePath} alt="logo" className="issuer-logo" />
-            ) : (
-              <div className="issuer-logo-fallback">No Image</div>
-            )}
+            <img
+              src={filePath ? `http://localhost:5001${filePath}` : placeholderImg}
+              alt="Issuer logo"
+              className="issuer-logo"
+              onError={(e) => (e.target.src = placeholderImg)}
+            />
           </div>
           <div className="credential-status-box">
-            <div className="credential-name">{issuer || title || "Credential Title"}</div>
+            <div className="credential-name">{issuerName || credentialType || "Credential Title"}</div>
             <div className="credential-status">
-              Status: <span className="verified">{status || "✓ Verified"}</span>
+              Status:{" "}
+              <span className={safeStatus === 'active' ? 'verified' : 'rejected'}>
+                {safeStatus}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="credential-details">
-          <h2>{credTitle || title || "Credential Details"}</h2>
-
+          <h2>{credentialType?.toUpperCase() || "Credential Details"}</h2>
+          <div className="detail-item"><strong>Credential Type: </strong> {credentialType || "N/A"}</div>
+          <div className="detail-item"><strong>Issuer: </strong> {issuerName || "N/A"}</div>
+          <div className="detail-item"><strong>Issue Date: </strong> {safeDate}</div>
+          <div className="detail-item"><strong>Credential ID: </strong> {credentialID || "N/A"}</div>
+          <div className="detail-item"><strong>Description: </strong> {description || "N/A"}</div>
           <div className="detail-item">
-            <span className="detail-label">Credential Type:</span>
-            <span className="detail-value">{type || "Unknown"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">Issuer:</span>
-            <span className="detail-value">{issuer || "Unknown Issuer"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">Issue Date:</span>
-            <span className="detail-value">{issueDate || "N/A"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">Name:</span>
-            <span className="detail-value">{name || "N/A"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">Description:</span>
-            <span className="detail-value">{description || "N/A"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">Blockchain Tx:</span>
-            <span className="detail-value">{blockchainTx || "N/A"}</span>
-          </div>
-
-          <div className="detail-item">
-            <span className="detail-label">On-Chain Status:</span>
+            <strong>On-Chain Status: </strong>
             <span className="detail-value">
-              {onChainValid === null ? "Checking..." : onChainValid ? "✅ Valid" : "❌ Invalid"}
+              {onChainValid === null ? "Checking..." : onChainValid ? "✅ Already on chain" : "❌ Invalid or Not Found"}
             </span>
           </div>
         </div>
@@ -192,11 +140,10 @@ const VerificationResult = () => {
         <button className="download-button" onClick={handleDownload}>DOWNLOAD</button>
       </div>
 
-      <button className="bottom-left-back-btn" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      <button className="bottom-left-back-btn" onClick={() => navigate(-1)}>← Back</button>
     </div>
   );
 };
 
 export default VerificationResult;
+

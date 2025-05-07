@@ -22,8 +22,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 app.use(bodyParser.json());
 
-// Connect to IPFS (Infura public gateway)
-const ipfs = create({ url: 'https://ipfs.io' });
 
 // MySQL connection (update credentials as needed)
 const pool = mysql.createPool({
@@ -325,13 +323,13 @@ app.put('/api/profile/:did', async (req, res) => {
 
 app.post('/api/credentials/request', authenticateToken, upload.single('file'), async (req, res) => {
   try {
-    const { credentialID, credentialType, description, requestedDate, expiryDate, issuerName, issuerDID } = req.body;
+    const { credentialID, credentialType, description, issueDate, expiryDate, issuerName, issuerDID } = req.body;
     const subjectDID = req.user.did; // ✅ Logged-in user's DID from JWT
     const filePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     await pool.query(
-      'INSERT INTO credential_requests (subjectDID, issuerDID, credentialID, credentialType, description, requestedDate, expiryDate, filePath, issuerName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [subjectDID, issuerDID, credentialID, credentialType, description, requestedDate, expiryDate, filePath, issuerName]
+      'INSERT INTO credential_requests (subjectDID, issuerDID, credentialID, credentialType, description, issueDate, expiryDate, filePath, issuerName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [subjectDID, issuerDID, credentialID, credentialType, description, issueDate, expiryDate, filePath, issuerName]
     );
 
     res.status(201).json({ message: 'Credential request saved successfully' });
@@ -359,16 +357,28 @@ app.get('/api/credentials/requests/:did', async (req, res) => {
 
 //wallet page fetch not found credential 
 app.get('/api/credentials/requestsnotfound/:did', async (req, res) => {
-  const { did } = req.params; // Get the DID from the route parameter
+  const { did } = req.params;
+
+  const statuses = [
+    'not found',
+    'meta-data not match',
+    'waiting for both issuer and user submission',
+    'revoked',
+    'duplicate'
+  ];
+
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM credential_requests WHERE subjectDID = ? AND status = ? ORDER BY created_at DESC',
-      [did, 'not found']  // Filter by the logged-in user's DID and the not found status
+      `SELECT * FROM credential_requests 
+       WHERE subjectDID = ? 
+       AND status IN (?, ?, ?, ?, ?)
+       ORDER BY created_at DESC`,
+      [did, ...statuses]
     );
     res.json(rows);
   } catch (err) {
     console.error('Fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch rejected credentials' });
+    res.status(500).json({ error: 'Failed to fetch filtered credentials' });
   }
 });
 
@@ -399,21 +409,6 @@ app.get('/api/credentials/detail/:id', async (req, res) => {
   
 
 
-  // app.get('/api/credentials/request/:subjectDID', async (req, res) => {
-  //   try {
-  //     const { subjectDID } = req.params;
-  //     const [rows] = await pool.query(
-  //       'SELECT * FROM credential_requests WHERE subjectDID = ? ORDER BY created_at DESC LIMIT 1',
-  //       [subjectDID]
-  //     );
-  //     if (rows.length === 0) return res.status(404).json({ error: 'No request found for this DID' });
-  //     res.json(rows[0]);
-  //   } catch (err) {
-  //     console.error('DID fetch error:', err);
-  //     res.status(500).json({ error: 'Server error' });
-  //   }
-  // });
-
 
 
 async function matchCredentialRequests() {
@@ -429,7 +424,7 @@ async function matchCredentialRequests() {
         request.subjectDID,
         request.issuerDID,
         request.credentialType,
-        request.requestedDate,
+        request.issueDate,
         request.issuerName,
       ]
     );
@@ -460,7 +455,7 @@ app.post('/api/submit-request', async (req, res) => {
       credentialType,
       issuerName,
       subjectDID,
-      requestedDate,
+      issueDate,
       expiryDate,
       reason,
       filePath,
@@ -470,9 +465,9 @@ app.post('/api/submit-request', async (req, res) => {
     // Insert request into credential_requests
     await db.query(
       `INSERT INTO credential_requests 
-       (credentialType, issuerName, subjectDID, requestedDate, expiryDate, reason, filePath, issuerDID) 
+       (credentialType, issuerName, subjectDID, issueDate, expiryDate, reason, filePath, issuerDID) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [credentialType, issuerName, subjectDID, requestedDate, expiryDate, reason, filePath, issuerDID]
+      [credentialType, issuerName, subjectDID, issueDate, expiryDate, reason, filePath, issuerDID]
     );
 
     // Run matching
@@ -499,8 +494,8 @@ app.post('/api/credentials/issue', upload.single('file'), async (req, res) => {
 
 
     const {
-      title, type, subjectDID, issuerDID, issueDate, expirationDate,
-      credentialId, status, cryptoProof, issuerName, subjectName,
+      title, type, subjectDID, issuerDID, issueDate, expiryDate,
+      credentialId, status, issuerName, subjectName,
       description, metadata, tags, schemaUrl,
     } = req.body;
 
@@ -508,19 +503,18 @@ app.post('/api/credentials/issue', upload.single('file'), async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO credentials 
-      (credentialTitle, credentialType, subjectDID, issuerDID, issueDate, expirationDate,
-       credentialID, status, cryptoProof, issuerName, subjectName, description, metadata, tags, schemaUrl, filePath)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (credentialTitle, credentialType, subjectDID, issuerDID, issueDate, expiryDate,
+       credentialID, status, issuerName, subjectName, description, metadata, tags, schemaUrl, filePath)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         type,
         subjectDID,
         issuerDID,
         issueDate,
-        expirationDate || null,
+        expiryDate || null,
         credentialId, // This is the JS variable; it maps to SQL column credentialID
         status || "not found",
-        cryptoProof || null,
         issuerName,
         subjectName || null,
         description || null,
@@ -606,19 +600,21 @@ app.get('/api/credentials/requestss/:email', async (req, res) => {
 app.put('/api/credentials/:id/revoke', async (req, res) => {
   const { id } = req.params;
   const { adminEmail } = req.body;
+
   try {
-    // Find issuerDID from adminEmail
     const [issuer] = await pool.query('SELECT issuerDID FROM issuers WHERE adminEmail = ?', [adminEmail]);
     if (!issuer.length) return res.status(404).json({ error: 'Issuer not found' });
 
     const issuerDID = issuer[0].issuerDID;
 
-    // Verify the credential belongs to this issuer
-    const [credential] = await pool.query('SELECT * FROM credentials WHERE id = ? AND issuerDID = ?', [id, issuerDID]);
-    if (!credential.length) return res.status(403).json({ error: 'Unauthorized or credential not found' });
+    // Fetch credential using id to get credentialID
+    const [credentialRows] = await pool.query('SELECT * FROM credentials WHERE id = ? AND issuerDID = ?', [id, issuerDID]);
+    if (!credentialRows.length) return res.status(403).json({ error: 'Unauthorized or credential not found' });
 
-    // Revoke the credential
-    await pool.query('UPDATE credentials SET status = ? WHERE id = ?', ['revoked', id]);
+    const credentialID = credentialRows[0].credentialID;
+
+    // Update all credentials for that credentialID
+    await pool.query('UPDATE credentials SET status = ? WHERE credentialID = ?', ['revoked', credentialID]);
 
     res.json({ message: 'Credential revoked successfully' });
   } catch (err) {
@@ -628,10 +624,10 @@ app.put('/api/credentials/:id/revoke', async (req, res) => {
 });
 
 
+const verificationStore = {}; 
 
-const verificationStore = {}; // In-memory store, replace with DB in production
 
-// Store verification data (POST)
+
 app.post('/api/verification/store', (req, res) => {
   const { id, credential } = req.body;
   if (!id || !credential) {
@@ -641,24 +637,44 @@ app.post('/api/verification/store', (req, res) => {
   res.status(200).json({ message: 'Verification data stored successfully' });
 });
 
-// Fetch verification data by ID (GET)
-app.get('/api/verification/:id', (req, res) => {
-  const id = req.params.id;
-  const credential = verificationStore[id];
-  if (!credential) {
-    return res.status(404).json({ error: 'Verification data not found or expired' });
+app.get('/api/verification/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM credential_requests 
+       WHERE credentialID = ? AND status = 'active' 
+       ORDER BY id DESC LIMIT 1`,
+      [id]
+    );
+
+    if (!rows.length) return res.status(404).json({ error: 'Active credential not found' });
+
+    res.json({ id, credential: rows[0] });
+  } catch (err) {
+    console.error("Verification fetch error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-  res.status(200).json({ id, credential });
 });
 
 
+app.get('/api/verification/detail/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM credential_requests 
+       WHERE credentialID = ? AND status = 'active' 
+       ORDER BY id DESC LIMIT 1`,
+      [id]
+    );
 
+    if (!rows.length) return res.status(404).json({ error: 'Active credential not found' });
 
-
-
-
-
-//setting
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Verification detail fetch error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
 // --- GET account info ---
@@ -724,6 +740,7 @@ app.delete('/api/user/delete/:did', async (req, res) => {
 
 
 
+
 const { ethers } = require("ethers");
 
 require("dotenv").config({ path: "../blockchain/.env" });
@@ -744,224 +761,164 @@ const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
 
+async function revokeCredentialOnBlockchain(credentialID) {
+  const tx = await contract.revokeCredential(credentialID);
+  await tx.wait();
+}
+
+async function markCredentialAsOnChainRevoked(credentialID) {
+  await pool.query(`UPDATE credentials SET onChainRevoked = TRUE WHERE credentialID = ?`, [credentialID]);
+  await pool.query(`UPDATE credential_requests SET onChainRevoked = TRUE WHERE credentialID = ?`, [credentialID]);
+}
+
+async function getOnChainRevokedStatus(credentialID) {
+  const [rows] = await pool.query(`SELECT onChainRevoked FROM credentials WHERE credentialID = ? LIMIT 1`, [credentialID]);
+  return rows[0]?.onChainRevoked === 1;
+}
+
+
+
+
 
 setInterval(async () => {
   try {
-    const [requests] = await pool.query(
-      "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
-    );
+    const [rows] = await pool.query(`
+      SELECT credentialID FROM credential_requests
+      WHERE status IN ('revoked', 'not found', 'processing') OR status IS NULL
+      UNION
+      SELECT credentialID FROM credentials
+      WHERE status IN ('revoked', 'not found', 'processing') OR status IS NULL
+    `);
 
-    if (requests.length === 0) return;
+    const credentialIDs = [...new Set(rows.map(r => r.credentialID))];
+    if (credentialIDs.length === 0) return;
 
-    console.log(`🕐 Running credential check | Found ${requests.length} pending requests`);
+    console.log(`🕐 Running credential check | Found ${credentialIDs.length} pending credentialIDs`);
 
-    const seen = new Set();
-
-    for (const request of requests) {
-      const { id, credentialID } = request;
-
-      if (seen.has(credentialID)) continue;
-      seen.add(credentialID);
-
+    for (const credentialID of credentialIDs) {
       console.log(`🔍 Checking credential ID: ${credentialID}`);
 
-      // Mark rows as 'processing' to prevent infinite loop
-      await pool.query(
-        "UPDATE credential_requests SET status = 'processing' WHERE credentialID = ? AND (status IS NULL OR status = 'not found')",
+      const [issuerRows] = await pool.query(
+        "SELECT * FROM credentials WHERE credentialID = ? AND submittedBy = 'issuer' ORDER BY id DESC LIMIT 1",
         [credentialID]
       );
-      const [rowsUser] = await pool.query(
-        "SELECT submittedBy FROM credential_requests WHERE credentialID = ?",
-        [credentialID]
-      );
-      const [rowsIssuer] = await pool.query(
-        "SELECT submittedBy FROM credentials WHERE credentialID = ?",
+      const [userRows] = await pool.query(
+        "SELECT * FROM credential_requests WHERE credentialID = ? AND submittedBy = 'user' ORDER BY id DESC LIMIT 1",
         [credentialID]
       );
       
-
-      const submittedByUser = rowsUser.map(r => r.submittedBy);
-      const submittedByIssuer = rowsIssuer.map(r => r.submittedBy);
-      const hasIssuer = submittedByIssuer.includes('issuer');
-      const hasUser = submittedByUser.includes('user');
-      console.log(`📥 Submitted by issuer:`, hasIssuer);
-      console.log(`📥 Submitted by user:`, hasUser);
-
-
-      // Check blockchain status
-      const isOnChain = await contract.isCredentialValid(credentialID);
-      console.log(`🧾 Blockchain status: ${isOnChain}`);
-
+      const issuerData = issuerRows[0];
+      const userData = userRows[0];
+      
+      const hasIssuer = !!issuerData;
+      const hasUser = !!userData;
+      
+      const issuerStatus = issuerData?.status?.toLowerCase();
+      const userStatus = userData?.status?.toLowerCase();
+      
+      console.log(`📥 Issuer submitted: ${hasIssuer}, Status: ${issuerStatus}`);
+      console.log(`📥 User submitted: ${hasUser}, Status: ${userStatus}`);
+      
+      // 🛑 Revocation logic stays unchanged
+      if (issuerStatus === 'revoked' || userStatus === 'revoked') {
+        const onChainRevoked = await getOnChainRevokedStatus(credentialID);
+        if (!onChainRevoked) {
+          try {
+            await revokeCredentialOnBlockchain(credentialID);
+            await markCredentialAsOnChainRevoked(credentialID);
+            console.log(`✅ Blockchain credential revoked: ${credentialID}`);
+          } catch (error) {
+            if (error.reason?.includes('already revoked')) {
+              await markCredentialAsOnChainRevoked(credentialID);
+              console.log(`⚠️ Credential ${credentialID} was already revoked on-chain`);
+            } else {
+              console.error(`❌ Failed to revoke credential:`, error);
+            }
+          }
+        } else {
+          console.log(`🔁 Skipping already-revoked credential: ${credentialID}`);
+        }
+      
+        await pool.query("UPDATE credentials SET status = 'revoked' WHERE credentialID = ?", [credentialID]);
+        await pool.query("UPDATE credential_requests SET status = 'revoked' WHERE credentialID = ?", [credentialID]);
+        continue;
+      }
+      
+      //  Allow reprocessing even if previous status was 'meta-data not match' or 'not found'
       let finalStatus = 'not found';
-
-      if (isOnChain) {
-        console.warn(`❌ Already on blockchain: ${credentialID}`);
-        finalStatus = 'duplicate';
-      } else if (hasIssuer && hasUser) {
-        try {
-          const tx = await contract.registerCredential(credentialID);
-          await tx.wait();
-          console.log(`✅ Registered on blockchain: ${credentialID}`);
-          finalStatus = 'active';
-        } catch (err) {
-          console.error(`❌ Blockchain error:`, err.message);
-          finalStatus = 'blockchain error';
+      
+      if (hasIssuer && hasUser) {
+        const fieldsToCheck = ['issuerID', 'issuerName', 'credentialType', 'issueDate', 'expiryDate'];
+        const mismatchedFields = [];
+      
+        fieldsToCheck.forEach(field => {
+          const issuerVal = issuerData[field]?.toString().trim().toLowerCase();
+          const userVal = userData[field]?.toString().trim().toLowerCase();
+          if (issuerVal !== userVal) {
+            mismatchedFields.push(field);
+          }
+        });
+      
+        if (mismatchedFields.length === 0) {
+          try {
+            const isOnChain = await contract.isCredentialValid(credentialID);
+            if (!isOnChain) {
+              const tx = await contract.registerCredential(credentialID);
+              await tx.wait();
+              console.log(`✅ Registered on blockchain: ${credentialID}`);
+              finalStatus = 'active';
+            } else {
+              console.warn(`⚠️ Already on blockchain. Duplicate.`);
+              finalStatus = 'duplicate';
+            }
+          } catch (err) {
+            console.error(`❌ Blockchain error: ${err.message}`);
+            finalStatus = 'blockchain error';
+          }
+        } else {
+          console.warn(`❌ Metadata mismatch: ${mismatchedFields.join(', ')}`);
+          finalStatus = 'meta-data not match';
         }
       } else {
-        console.warn(`⚠️ Waiting for both issuer and user submission: ${credentialID}`);
+        console.warn(`⏳ Waiting for both issuer and user submission`);
+        finalStatus = 'waiting for both issuer and user submission';
       }
-
-      // Only update credential_request rows that are still processing
-      await pool.query(
-        "UPDATE credential_requests SET status = ? WHERE credentialID = ? AND status = 'processing'",
-        [finalStatus, credentialID]
-      );
-
-      await pool.query(
-        "UPDATE credentials SET status = ? WHERE credentialID = ?",
-        [finalStatus, credentialID]
-      );
+      
+      // Only update the *latest* issuer and user row by ID
+      if (hasIssuer && issuerData.status !== 'active') {
+        await pool.query(
+          "UPDATE credentials SET status = ? WHERE id = ?",
+          [finalStatus, issuerData.id]
+        );
+      }
+      
+      if (hasUser && userData.status !== 'active') {
+        await pool.query(
+          "UPDATE credential_requests SET status = ? WHERE id = ?",
+          [finalStatus, userData.id]
+        );
+      }
+      
+      //  Promote both to 'active' explicitly if matched
+      if (finalStatus === 'active') {
+        if (hasIssuer) {
+          await pool.query(
+            "UPDATE credentials SET status = 'active' WHERE id = ?",
+            [issuerData.id]
+          );
+        }
+        if (hasUser) {
+          await pool.query(
+            "UPDATE credential_requests SET status = 'active' WHERE id = ?",
+            [userData.id]
+          );
+        }
+      }
     }
   } catch (err) {
     console.error("❌ Loop Error:", err);
   }
-}, 1000);
-
-
-
-// setInterval(async () => {
-//   try {
-//     const [requests] = await pool.query(
-//       "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
-//     );
-
-//     if (requests.length === 0) return;
-
-//     console.log(`🕐 Running credential check | Found ${requests.length} pending requests`);
-
-//     const seen = new Set();
-
-//     for (const request of requests) {
-//       const { id, credentialID } = request;
-
-//       if (seen.has(credentialID)) continue;
-//       seen.add(credentialID);
-
-//       console.log(`🔍 Checking credential ID: ${credentialID}`);
-
-//       // Mark all rows with this ID as "processing"
-//       await pool.query(
-//         "UPDATE credential_requests SET status = 'processing' WHERE credentialID = ? AND (status IS NULL OR status = 'not found')",
-//         [credentialID]
-//       );
-
-//       const [match] = await pool.query(
-//         "SELECT * FROM credentials WHERE credentialID = ?",
-//         [credentialID]
-//       );
-
-//       console.log(`📦 Matches in credentials table: ${match.length}`);
-
-//       // If credential is already active on blockchain, skip processing
-//       const isOnChain = await contract.isCredentialValid(credentialID);
-//       console.log(`🧾 Blockchain status of ${credentialID}: ${isOnChain}`);
-
-//       if (isOnChain) {
-//         console.warn(`❌ Already on blockchain: ${credentialID}`);
-//         await pool.query("UPDATE credential_requests SET status = 'duplicated' WHERE credentialID = ?", [credentialID]);
-//         continue;
-//       }
-
-//       let finalStatus = 'not found';
-
-//       // If only one match found in credentials table (ensure it's a valid match for both user and issuer)
-
-//       try {
-//         const tx = await contract.registerCredential(credentialID);
-//         await tx.wait();
-//         console.log(`✅ Saved to blockchain: ${credentialID}`);
-//         finalStatus = 'active';
-//       } catch (err) {
-//         console.error(`❌ Blockchain error for ${credentialID}:`, err.message);
-//         finalStatus = 'blockchain error';
-//       }
-
-
-//       // Update status in credential_requests table and credentials table
-//       await pool.query(
-//         "UPDATE credential_requests SET status = ? WHERE credentialID = ?",
-//         [finalStatus, credentialID]
-//       );
-
-//       await pool.query(
-//         "UPDATE credentials SET status = ? WHERE credentialID = ?",
-//         [finalStatus, credentialID]
-//       );
-//     }
-//   } catch (err) {
-//     console.error("❌ Loop Error:", err);
-//   }
-// }, 1000);
-
-// setInterval(async () => {
-//   try {
-//     const [requests] = await pool.query(
-//       "SELECT id, credentialID FROM credential_requests WHERE status IS NULL OR status = 'not found'"
-//     );
-
-//     for (const request of requests) {
-//       const [match] = await pool.query(
-//         'SELECT credentialID FROM credentials WHERE credentialID = ?',
-//         [request.credentialID]
-//       );
-
-//       let status = 'not found';
-
-//       // Check if already registered on blockchain
-//       const isOnChain = await contract.isCredentialValid(request.credentialID);
-//       if (isOnChain) {
-//         status = 'duplicate';
-//         console.warn(`❌ Credential already on blockchain: ${request.credentialID}`);
-//         await pool.query('UPDATE credential_requests SET status = ? WHERE id = ?', [status, request.id]);
-//         continue; // skip the rest, as it's already on the blockchain
-//       }
-
-//       // If there's exactly 1 match in the credentials table, then it's safe to proceed
-//       if (match.length === 1) {
-//         // Both issuer and user have matched the same credential, we can save it to the blockchain
-//         try {
-//           const tx = await contract.registerCredential(request.credentialID);
-//           await tx.wait();
-//           console.log(`✅ Saved to blockchain: ${request.credentialID}`);
-//           status = 'active';  // Set status to 'active' after blockchain registration
-//         } catch (err) {
-//           console.error(`❌ Blockchain error for ${request.credentialID}:`, err.message);
-//           status = 'blockchain error';  // Set status as 'blockchain error' in case of failure
-//         }
-//       } else if (match.length > 1) {
-//         // If more than one match is found, this is a duplicate
-//         status = 'duplicate';
-//         console.warn(`❌ Duplicate credential detected in DB: ${request.credentialID}`);
-//       }
-
-//       // Update status in both tables
-//       await pool.query(
-//         'UPDATE credential_requests SET status = ? WHERE id = ?',
-//         [status, request.id]
-//       );
-
-//       await pool.query(
-//         'UPDATE credentials SET status = ? WHERE credentialID = ?',
-//         [status, request.credentialID]
-//       );
-//     }
-//   } catch (err) {
-//     console.error('Error during scheduled credential check:', err);
-//   }
-// }, 1000); // runs every 1 second
-
-
-
+}, 3000); // Every 3 seconds
 
 // ------------------- START SERVER -------------------
 app.listen(port, () => {

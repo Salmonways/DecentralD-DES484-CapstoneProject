@@ -9,7 +9,7 @@ const Issuer_new = () => {
   const [type, setType] = useState('');
   const [subjectDID, setSubjectDID] = useState('');
   const [issueDate, setIssueDate] = useState('');
-  const [expirationDate, setExpirationDate] = useState('');
+  const [expiryDate, setexpiryDate] = useState('');
   const [cryptoProof] = useState('SignedJWT-abc123xyz'); // Mock proof
   const [issuerName, setIssuerName] = useState('');
   const [subjectName, setSubjectName] = useState('');
@@ -46,7 +46,7 @@ const Issuer_new = () => {
     formData.append('subjectDID', subjectDID);
     formData.append('issuerDID', issuerDID);
     formData.append('issueDate', issueDate);
-    formData.append('expirationDate', expirationDate);
+    formData.append('expiryDate', expiryDate);
     formData.append('cryptoProof', cryptoProof);
     formData.append('subjectName', subjectName);
     formData.append('description', description);
@@ -111,7 +111,7 @@ const Issuer_new = () => {
           <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="date-select" />
 
           <label>Expiration Date</label>
-          <input type="date" value={expirationDate} onChange={(e) => setExpirationDate(e.target.value)} className="date-select" />
+          <input type="date" value={expiryDate} onChange={(e) => setexpiryDate(e.target.value)} className="date-select" />
 
           <label>Issuer Name / Organization</label>
           <input type="text" placeholder="Issuer Name / Organization" value={issuerName} onChange={(e) => setIssuerName(e.target.value)} readOnly />

@@ -36,7 +36,7 @@ const LoginPage = () => {
     }
 
     if (response.ok) {
-      localStorage.setItem('adminEmail', formData.adminEmail); // <-- Save it here
+      localStorage.setItem('adminEmail', formData.adminEmail);
       alert("Issuer login successful!");
       navigate("/issuerdashboard");
     }

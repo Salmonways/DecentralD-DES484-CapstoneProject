@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './WalletPage_CreDetails.css';
 
+const statusLabels = {
+  'not found': 'Not Found',
+  'meta-data not match': 'Metadata Mismatch',
+  'waiting for both issuer and user submission': 'Waiting for Both Parties',
+  'revoked': 'Revoked',
+  'duplicate': 'Duplicate Entry',
+};
 const WalletPage_CreDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -71,7 +78,9 @@ const WalletPage_CreDetails = () => {
             <div className="walletpage-cred-logo-fallback">No Logo</div>
           )}
           <p className="walletpage-cred-status">
-            Status: {credential.status === 'active' ? '✅ Verified' : '❌ Rejected'}
+            Status: {credential.status === 'active'
+              ? '✅ Active'
+              : `❌ ${statusLabels[credential.status] || credential.status}`}
           </p>
         </div>
 

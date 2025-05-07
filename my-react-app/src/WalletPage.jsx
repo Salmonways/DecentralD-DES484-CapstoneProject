@@ -31,9 +31,19 @@ const WalletPage = () => {
       }
       const data = await response.json();
   
-      const filtered = data.filter(cred => 
-        status === 'Verified' ? cred.status === 'active' : cred.status === 'not found'
-      );
+      const rejectedStatuses = [
+  'not found',
+  'meta-data not match',
+  'waiting for both issuer and user submission',
+  'revoked',
+  'duplicate'
+];
+
+const filtered = data.filter(cred => 
+  status === 'Verified'
+    ? cred.status === 'active'
+    : rejectedStatuses.includes(cred.status?.toLowerCase())
+);
       setCredentials(filtered);
     } catch (err) {
       console.error('Fetch error:', err);
@@ -82,11 +92,19 @@ const WalletPage = () => {
             credentials.map((cred) => (
               <div className="walletPage-credential-card" key={cred.id}>
                 <div className="walletPage-logo-wrapper">
-                  <img src={cred.filePath} className="walletPage-logo" alt={cred.issuerName} />
+                <img 
+                  src={cred.filePath ? `http://localhost:5001${cred.filePath}` : placeholderImg} 
+                  className="walletPage-logo" 
+                  alt={cred.issuerName} 
+                />
                 </div>
                 <div className="walletPage-info">
                   <h3>{cred.issuerName}</h3>
-                  <p>Status: {cred.status === 'active' ? '✅ Verified' : '❌ Rejected'}</p>
+                  <p>
+                    Status: {cred.status === 'active'
+                      ? '✅ Active'
+                      : `❌ ${cred.status?.charAt(0).toUpperCase() + cred.status?.slice(1)}`}
+                  </p> 
                   <button
                     className="walletPage-view-btn"
                     onClick={() => navigate(`/walletpage/credetails/${cred.id}`)}

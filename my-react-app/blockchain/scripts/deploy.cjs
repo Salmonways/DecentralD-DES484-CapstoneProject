@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
-  const CredentialContract = await hre.ethers.getContractFactory("CredentialRegistry"); // ✅ Match your .sol contract name
+  const CredentialContract = await hre.ethers.getContractFactory("CredentialRegistry"); 
   const contract = await CredentialContract.deploy();
 
-  await contract.waitForDeployment(); // ✅ Required in latest ethers.js
+  await contract.waitForDeployment(); 
 
-  const address = await contract.getAddress(); // ✅ Fetch deployed address
+  const address = await contract.getAddress(); 
 
   console.log("✅ Contract deployed to:", address);
 }

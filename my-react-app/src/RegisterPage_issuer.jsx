@@ -35,7 +35,7 @@ const RegisterPage_Issuer = () => {
         if (value !== null && value !== undefined) form.append(key, value);
     });
 
-    // Prompt for password (for demo) - you should use a real password input
+    
     const password = prompt("Set a password for admin login:");
     form.append('password', password);
 
