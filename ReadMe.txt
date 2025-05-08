@@ -1,20 +1,38 @@
-- To open the frontend:
-    1. stay in the my-react-app repo
-    2. run in terminal npm run dev
-- To open the backend:
-    1. stay in the my-react-app/backend repo
-    2. run in terminal node server.js
-- To open the database:
-    1. open MAMP MySQL
-    2. open phpMyAdmin
-    3. import .sql from database
-- To open blockchain: 
-    1. cd ~/Developer/DES484/Capstone-Project-main/my-react-app/blockchain
-    2. run in terminal npx hardhat node
-    3. vite private key in .env my-react-app repo: copy the local private key from the terminal and put in .env file in my-react-app folder at VITE_PRIVATE_KEY
-    4. vite contracts address in .env my-react-app repo: run in terminal npx hardhat run scripts/deploy.cjs --network localhost then copy contract address to VITE_CONTRACT_ADDRESS at .env file in my-react-app
-    5. vite_rpc_url in .env my-react-app repo: VITE_RPC_URL=http://127.0.0.1:8545
-    6. rpc_url in .env blockchain repo:  RPC_URL=http://127.0.0.1:8545
-    7. infura project id in .env in blockchain repo: open infura and sign in the copy id and insert in INFURA_PROJECT_ID=https://mainnet.infura.io/v3/infura_project_id
-    8. private key in .env in blockchain repo: same as vite private key
-    9. contract address in .env in blockchain repo: same as vite contract address
+To open the frontend:
+    Open new terminal
+    Run in terminal “cd my-react-app”
+    Run in terminal “npm run dev”
+    Go to browser url and type “http://localhost:5173/” 
+To open the backend:
+    Open new terminal
+    Run in terminal “cd my-react-app/backend”
+    Run in terminal “node server.js” 
+To import the database:
+    Open MAMP
+    Start the server
+    Open phpMyAdmin
+    import .sql in database folder to the phpMyAdmin
+To open blockchain:
+    Open new terminal
+    Run in terminal “my-react-app/blockchain”
+    Run in terminal “npx hardhat node”
+    You will see lot of account generated with account numbers and private keys
+    Open new terminal
+    Run in terminal “my-react-app/blockchain”
+    Run in terminal “npx hardhat run scripts/deploy.cjs”
+    You will see the contract address, e.g., “Contract deployed to: 0x..."
+    Create a file name “.env” in my-react-app repository and type
+
+    VITE_CONTRACT_ADDRESS=Replace with Contract address e.g.0x...
+    VITE_PRIVATE_KEY=Replace with Private key of any account e.g 0x..
+    VITE_RPC_URL=http://127.0.0.1:8545
+
+    Go to “https://developer.metamask.io/login?redirect=%2Fkey%2Fall-endpoints”
+    Sign up or sign in with metamask developer account
+    On the left panel go to Infura RPC, then copy the project ID, e.g., 0ff…
+    Create a file name “.env” in my-react-app/blockchain repository and type
+    
+    INFURA_PROJECT_ID=https://mainnet.infura.io/v3/Replace with project ID.
+    PRIVATE_KEY=Replace with the same Private key
+    CONTRACT_ADDRESS=Replace with the same Contract address
+    RPC_URL=http://127.0.0.1:8545

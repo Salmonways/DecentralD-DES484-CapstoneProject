@@ -46,7 +46,7 @@ const RegisterPage_Issuer = () => {
 
     const data = await response.json();
     if (response.ok) {
-        alert("Registration submitted! Please complete DNS verification.");
+        alert("Registration submitted!.");
         navigate("/issuerlogin");
     } else {
         alert("Registration failed: " + data.error);
@@ -82,14 +82,7 @@ const RegisterPage_Issuer = () => {
 
             <h3>Decentralized Identity (DID)</h3>
             <input name="issuerDID" type="text" placeholder="Requested Issuer DID (or leave blank to auto-generate)" value={formData.issuerDID} onChange={handleChange} />
-            <input name="publicKey" type="text" placeholder="Public Key (optional)" value={formData.publicKey} onChange={handleChange} />
 
-            <h3>DNS Proof</h3>
-            <div className="dns-instruction">
-              Please create a TXT record in your domain's DNS:
-              <br />
-              <code>decentrald-verification={formData.dnsToken}</code>
-            </div>
 
             <h3>Organization Logo (Optional)</h3>
             <input name="logo" type="file" accept="image/*" onChange={handleChange} />
